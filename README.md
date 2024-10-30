@@ -14,24 +14,10 @@ This platform integrates various health and fitness data sources into a unified 
 
 ## Future plans
 
-- **Garmin HRM-Pro Plus**
-  - Heart rate monitoring
-  - Exercise zones
-  - Activity tracking
-
-- **Withings**
-  - Weight measurements
-  - Body composition
-  - BMI tracking
-
-- **BlazePod**
-  - Reaction time
-  - Performance metrics
-
-- **Cronometer**
-  - Nutrition tracking
-  - Calorie monitoring
-  - Dietary analysis
+- Garmin HRM-Pro Plus
+- Withings
+- BlazePod
+- Cronometer
 
 ## Architecture
 
@@ -71,24 +57,9 @@ The platform utilizes the following GCP services:
 1. Generate Personal Access Token at <https://cloud.ouraring.com/personal-access-tokens>
 2. Configure token in `data_sources/oura/configs/oura_config.yaml`
 
-### Garmin HRM-Pro Plus
-
-1. Configure Garmin credentials in `data_sources/garmin/configs/garmin_config.yaml`
-2. Uses GarminDB integration for data access
-
-### Withings
-
-1. Create developer account at <https://developer.withings.com/developer-guide>
-2. Set up OAuth2 credentials
-3. Configure in `data_sources/withings/configs/withings_config.yaml`
-
-### Cronometer
-
-1. Configure login credentials in `data_sources/cronometer/configs/cronometer_config.yaml`
-
 ## Data Points Collected
 
-### Vitals
+### Target vitals
 
 - Blood Glucose Levels
 - Blood Pressure
@@ -101,8 +72,6 @@ The platform utilizes the following GCP services:
 
 - Activity Score / Calories burned (Oura)
 - Steps per day / Walking equivalent (Oura)
-- Exercise Heart Rate zones (Garmin HRM-Pro Plus)
-- Reaction time (BlazePod)
 
 ### Sleep (Oura)
 
