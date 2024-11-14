@@ -36,26 +36,127 @@ The platform utilizes the following GCP services:
 
     ```bash
     git clone https://github.com/yourusername/health-data-integration
-    ```
-
-2. Install dependencies using Poetry:
-
-    ```bash
     cd health-data-integration
     ```
 
-3. Set up Google Cloud credentials:
+2. Create and activate virtual environment:
 
     ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/credentials.json"
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
     ```
 
-## Data Sources Setup
+3. Install the package with development dependencies:
 
-### Oura Ring
+    ```bash
+    # Install with development dependencies
+    pip install -e ".[dev]"
+    
+    # Or install only runtime dependencies
+    pip install -e .
+    ```
 
-1. Generate Personal Access Token at <https://cloud.ouraring.com/personal-access-tokens>
-2. Configure token in `data_sources/oura/configs/oura_config.yaml`
+4. Set up environment variables:
+
+    ```bash
+    # Create .env file in .config/development/
+    mkdir -p .config/development
+    touch .config/development/.env
+
+    # Add required environment variables
+    echo "OURA_API_TOKEN=your_token_here" >> .config/development/.env
+    echo "GOOGLE_APPLICATION_CREDENTIALS=.config/development/service-account.json" >> .config/development/.env
+    ```
+
+## GCP Project Setup
+
+1. Create a new GCP project or select an existing one:
+
+    ```bash
+    gcloud projects create stefans-body-etl  # Optional: if creating new project
+    gcloud config set project stefans-body-etl
+    ```
+
+2. Enable required APIs:
+
+    ```bash
+    gcloud services enable \
+        bigquery.googleapis.com \
+        storage.googleapis.com
+    ```
+
+3. Create service account and grant permissions:
+
+    ```bash
+    # Create service account
+    gcloud iam service-accounts create kirill-markin-mac \
+        --display-name="Kirill Markin Mac Service Account"
+
+    # Download service account key
+    gcloud iam service-accounts keys create .config/development/service-account.json \
+        --iam-account=kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com
+
+    # Grant necessary permissions
+    gcloud projects add-iam-policy-binding stefans-body-etl \
+        --member="serviceAccount:kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com" \
+        --role="roles/storage.objectViewer"
+
+    gcloud projects add-iam-policy-binding stefans-body-etl \
+        --member="serviceAccount:kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com" \
+        --role="roles/storage.objectCreator"
+
+    gcloud projects add-iam-policy-binding stefans-body-etl \
+        --member="serviceAccount:kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com" \
+        --role="roles/bigquery.dataEditor"
+    ```
+
+4. Create GCS bucket and BigQuery dataset:
+
+    ```bash
+    # Create GCS bucket
+    gcloud storage buckets create gs://oura-raw-data \
+        --project=stefans-body-etl \
+        --location=US \
+        --uniform-bucket-level-access
+
+    # Create BigQuery dataset
+    bq --location=US mk \
+        --dataset \
+        stefans-body-etl:oura_data
+    ```
+
+## Running the Pipeline
+
+1. Configure Oura Ring API token:
+   - Generate token at https://cloud.ouraring.com/personal-access-tokens
+   - Add to `.config/development/.env` as `OURA_API_TOKEN`
+
+2. Run the pipeline:
+
+    ```bash
+    python3 scripts/run_pipeline.py
+    ```
+
+   This will:
+   - Extract data from Oura Ring API
+   - Save raw data to GCS bucket
+   - Transform data into structured format
+   - Load data into BigQuery tables
+
+3. If you need to reset the pipeline:
+
+    ```bash
+    # Drop existing BigQuery tables
+    bq rm -f -t stefans-body-etl:oura_data.oura_sleep
+    bq rm -f -t stefans-body-etl:oura_data.oura_activity
+    bq rm -f -t stefans-body-etl:oura_data.oura_readiness
+    ```
+
+## Monitoring
+
+- View raw data in GCS: `gs://oura-raw-data/raw/oura/`
+- Query data in BigQuery: `stefans-body-etl.oura_data.*`
+- Check logs in Cloud Logging for detailed pipeline execution information
 
 ## Data Points Collected
 

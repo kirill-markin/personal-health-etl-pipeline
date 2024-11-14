@@ -1,0 +1,105 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "personal-health-etl"
+version = "0.1.0"
+description = "Personal Health ETL Pipeline"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Kirill Markin", email = "markinkirill@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "google-cloud-storage>=2.14.0",
+    "google-cloud-bigquery>=3.14.1",
+    "apache-beam[gcp]>=2.53.0",
+    "pandas>=2.2.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.1",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.4",
+    "pytest-cov>=4.1.0",
+    "black>=23.12.1",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.5.0",
+    "ruff>=0.1.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/kirill-markin/personal-health-etl-pipeline"
+Documentation = "https://github.com/kirill-markin/personal-health-etl-pipeline#readme"
+Repository = "https://github.com/kirill-markin/personal-health-etl-pipeline.git"
+Issues = "https://github.com/kirill-markin/personal-health-etl-pipeline/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/personal_health_etl"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=src --cov-report=html --cov-report=term-missing"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/docs
+'''
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+strict_optional = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+plugins = [
+    "numpy.typing.mypy_plugin",
+]
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long, handled by black
+]
+target-version = "py39"
+line-length = 88
+fix = true
