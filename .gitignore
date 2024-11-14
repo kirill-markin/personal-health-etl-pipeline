@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Google Cloud
+credentials.json
+*-credentials.json
+*.json.key
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Misc
+.DS_Store
+
+# Secrets and credentials
+.secrets/
+.env*
+**/credentials/
+**/*credentials*.json
+**/*secret*.json
+
+# But allow templates
+!.env.template
+!.secrets/README.md
+
+# Exclude all files in .config/development
+.config/development/*
+
+# But include the template file
+!.config/development/.env.template

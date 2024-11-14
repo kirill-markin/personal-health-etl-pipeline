@@ -1,0 +1,17 @@
+api:
+  base_url: "https://api.ouraring.com/v2"
+  token: "${OURA_API_TOKEN}"
+  endpoints:
+    sleep: "/usercollection/sleep"
+    activity: "/usercollection/daily_activity"
+    readiness: "/usercollection/daily_readiness"
+
+gcp:
+  project_id: "stefans-body-etl"
+  bucket_name: "oura-raw-data"
+  dataset_id: "oura_data"
+  location: "US"
+  
+  # GCS paths
+  raw_data_path: "raw/oura/{data_type}/{date}"
+  processed_data_path: "processed/oura/{data_type}/{date}"
