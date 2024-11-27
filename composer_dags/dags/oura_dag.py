@@ -1,0 +1,78 @@
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.models import Variable
+from datetime import datetime, timedelta
+from data_sources.oura.pipelines.dataflow_pipeline import OuraPipeline
+import logging
+import os
+import json
+
+logger = logging.getLogger(__name__)
+
+# Get configurations from Airflow Variables
+def get_config():
+    try:
+        gcp_config = Variable.get("oura_gcp_config", deserialize_json=True)
+    except ValueError as e:
+        logger.error("Failed to parse oura_gcp_config: Make sure it's valid JSON")
+        raise
+    except KeyError as e:
+        logger.error("Missing required Airflow Variable: oura_gcp_config")
+        logger.error("Please set this variable in the Airflow UI with your GCP configuration")
+        raise
+
+    if not os.environ.get('OURA_API_TOKEN'):
+        logger.error("Missing required environment variable: OURA_API_TOKEN")
+        raise ValueError("OURA_API_TOKEN environment variable must be set")
+
+    api_config = {
+        "base_url": "https://api.ouraring.com/v2",
+        "token": os.environ.get('OURA_API_TOKEN'),
+        "endpoints": {
+            "sleep": "/usercollection/sleep",
+            "activity": "/usercollection/daily_activity",
+            "readiness": "/usercollection/daily_readiness"
+        }
+    }
+    return {"api": api_config, "gcp": gcp_config}
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+dag = DAG(
+    'oura_etl_pipeline',
+    default_args=default_args,
+    description='ETL pipeline for Oura Ring data',
+    schedule_interval='0 4 * * *',  # Run daily at 4 AM
+    start_date=datetime(2024, 1, 1),
+    catchup=False,
+    tags=['oura', 'health'],
+)
+
+def run_oura_pipeline(**context):
+    try:
+        config = get_config()
+        pipeline = OuraPipeline(config)
+        
+        # Set date range (previous day)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=1)
+        
+        # Run pipeline
+        pipeline.run(start_date, end_date)
+        
+    except Exception as e:
+        logger.error(f"Pipeline failed: {e}")
+        raise
+
+extract_load_task = PythonOperator(
+    task_id='extract_transform_load',
+    python_callable=run_oura_pipeline,
+    dag=dag,
+)

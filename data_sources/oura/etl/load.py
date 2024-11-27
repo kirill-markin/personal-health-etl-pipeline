@@ -14,52 +14,35 @@ class OuraLoader:
         self.config = self._load_config(config_path)
         self.storage_client = storage.Client()
         self.bq_client = bigquery.Client()
-        self._ensure_bucket_exists()
-        self._ensure_dataset_exists()
+        self._verify_bucket_exists()
+        self._verify_dataset_exists()
         
     def _load_config(self, config_path: str):
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
     
-    def _ensure_bucket_exists(self):
-        """Create the GCS bucket if it doesn't exist"""
+    def _verify_bucket_exists(self):
+        """Verify the GCS bucket exists"""
         bucket_name = self.config['gcp']['bucket_name']
-        project_id = self.config['gcp']['project_id']
-        location = self.config['gcp']['location']
-        
         try:
-            bucket = self.storage_client.get_bucket(bucket_name)
-            logger.info(f"Bucket {bucket_name} already exists")
+            self.storage_client.get_bucket(bucket_name)
+            logger.info(f"Bucket {bucket_name} exists")
         except Exception:
-            logger.info(f"Creating bucket {bucket_name}")
-            bucket = self.storage_client.create_bucket(
-                bucket_name,
-                project=project_id,
-                location=location
-            )
-            logger.info(f"Created bucket {bucket_name}")
-        
-        return bucket
+            logger.error(f"Bucket {bucket_name} does not exist")
+            raise
     
-    def _ensure_dataset_exists(self):
-        """Create the BigQuery dataset if it doesn't exist"""
+    def _verify_dataset_exists(self):
+        """Verify the BigQuery dataset exists"""
         project_id = self.config['gcp']['project_id']
         dataset_id = self.config['gcp']['dataset_id']
-        location = self.config['gcp']['location']
-        
         dataset_ref = f"{project_id}.{dataset_id}"
         
         try:
-            dataset = self.bq_client.get_dataset(dataset_ref)
-            logger.info(f"Dataset {dataset_ref} already exists")
+            self.bq_client.get_dataset(dataset_ref)
+            logger.info(f"Dataset {dataset_ref} exists")
         except exceptions.NotFound:
-            logger.info(f"Creating dataset {dataset_ref}")
-            dataset = bigquery.Dataset(dataset_ref)
-            dataset.location = location
-            dataset = self.bq_client.create_dataset(dataset, exists_ok=True)
-            logger.info(f"Created dataset {dataset_ref}")
-        
-        return dataset
+            logger.error(f"Dataset {dataset_ref} does not exist")
+            raise
     
     def save_to_gcs(self, data: Dict, data_type: str, date: datetime) -> str:
         """Save raw data to Google Cloud Storage"""
@@ -81,38 +64,21 @@ class OuraLoader:
     
     def _get_table_schema(self, table_name: str) -> List[bigquery.SchemaField]:
         """Get the appropriate schema based on table name"""
-        schemas = {
-            'oura_sleep': [
-                bigquery.SchemaField("id", "STRING"),
-                bigquery.SchemaField("date", "DATE"),
-                bigquery.SchemaField("duration", "FLOAT"),
-                bigquery.SchemaField("sleep_score", "FLOAT"),
-                bigquery.SchemaField("restfulness", "FLOAT"),
-                bigquery.SchemaField("hr_average", "FLOAT"),
-                bigquery.SchemaField("hrv_average", "FLOAT"),
-                bigquery.SchemaField("temperature_delta", "FLOAT"),
-            ],
-            'oura_activity': [
-                bigquery.SchemaField("id", "STRING"),
-                bigquery.SchemaField("date", "DATE"),
-                bigquery.SchemaField("calories_active", "FLOAT"),
-                bigquery.SchemaField("calories_total", "FLOAT"),
-                bigquery.SchemaField("steps", "INTEGER"),
-                bigquery.SchemaField("daily_movement", "FLOAT"),
-                bigquery.SchemaField("activity_score", "FLOAT"),
-                bigquery.SchemaField("inactivity_alerts", "INTEGER"),
-                bigquery.SchemaField("average_met", "FLOAT"),
-            ],
-            'oura_readiness': [
-                bigquery.SchemaField("id", "STRING"),
-                bigquery.SchemaField("date", "DATE"),
-                bigquery.SchemaField("score", "FLOAT"),
-                bigquery.SchemaField("temperature_trend_deviation", "FLOAT"),
-                bigquery.SchemaField("hrv_balance_score", "FLOAT"),
-            ]
-        }
-        
-        return schemas.get(table_name, [])
+        schema_path = f"schemas/oura/{table_name}.json"
+        try:
+            with open(schema_path, 'r') as f:
+                schema_dict = json.load(f)
+                return [
+                    bigquery.SchemaField(
+                        field['name'],
+                        field['type'],
+                        mode=field['mode']
+                    )
+                    for field in schema_dict['fields']
+                ]
+        except FileNotFoundError:
+            logger.warning(f"Schema file not found for {table_name}")
+            return []
 
     def load_to_bigquery(self, df: pd.DataFrame, table_name: str):
         """Load transformed data to BigQuery"""

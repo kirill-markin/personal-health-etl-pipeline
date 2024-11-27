@@ -7,7 +7,7 @@ name = "personal-health-etl"
 version = "0.1.0"
 description = "Personal Health ETL Pipeline"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9, <3.13"
 license = { file = "LICENSE" }
 authors = [
     { name = "Kirill Markin", email = "markinkirill@gmail.com" },
@@ -21,24 +21,25 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-    "google-cloud-storage>=2.14.0",
-    "google-cloud-bigquery>=3.14.1",
-    "apache-beam[gcp]>=2.53.0",
-    "pandas>=2.2.0",
-    "requests>=2.31.0",
-    "pyyaml>=6.0.1",
-    "python-dotenv>=1.0.0",
+    "google-cloud-storage==2.14.0",
+    "google-cloud-bigquery==3.14.1",
+    "apache-beam[gcp]==2.54.0",
+    "pandas==2.2.0",
+    "requests==2.31.0",
+    "pyyaml==6.0.1",
+    "python-dotenv==1.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.4",
-    "pytest-cov>=4.1.0",
-    "black>=23.12.1",
-    "flake8>=7.0.0",
-    "mypy>=1.8.0",
-    "pre-commit>=3.5.0",
-    "ruff>=0.1.9",
+    "pytest~=7.4.4",
+    "pytest-cov~=4.1.0",
+    "black~=23.12.1",
+    "flake8~=7.0.0",
+    "mypy~=1.8.0",
+    "pre-commit~=3.5.0",
+    "ruff~=0.1.9",
+    "apache-airflow~=2.7.0",
 ]
 
 [project.urls]

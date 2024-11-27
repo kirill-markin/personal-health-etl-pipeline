@@ -1,9 +1,8 @@
-from typing import Dict, Any
 from datetime import datetime
 import logging
-from ..etl.extract import OuraExtractor
-from ..etl.transform import OuraTransformer
-from ..etl.load import OuraLoader
+from data_sources.oura.etl.extract import OuraExtractor
+from data_sources.oura.etl.transform import OuraTransformer
+from data_sources.oura.etl.load import OuraLoader
 
 logger = logging.getLogger(__name__)
 

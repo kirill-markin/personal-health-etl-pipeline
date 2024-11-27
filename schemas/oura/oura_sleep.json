@@ -1,0 +1,10 @@
+[
+  {"name": "id", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "date", "type": "DATE", "mode": "NULLABLE"},
+  {"name": "duration", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "sleep_score", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "restfulness", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "hr_average", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "hrv_average", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "temperature_delta", "type": "FLOAT", "mode": "NULLABLE"}
+]

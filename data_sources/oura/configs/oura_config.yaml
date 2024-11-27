@@ -7,10 +7,11 @@ api:
     readiness: "/usercollection/daily_readiness"
 
 gcp:
-  project_id: "stefans-body-etl"
-  bucket_name: "oura-raw-data"
-  dataset_id: "oura_data"
-  location: "US"
+  # Read from Terraform output files
+  bucket_name: "${data.terraform_remote_state.oura.outputs.bucket_name}"
+  dataset_id: "${data.terraform_remote_state.oura.outputs.dataset_id}"
+  location: "${data.terraform_remote_state.oura.outputs.location}"
+  project_id: "${data.terraform_remote_state.oura.outputs.project_id}"
   
   # GCS paths
   raw_data_path: "raw/oura/{data_type}/{date}"

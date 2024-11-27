@@ -1,0 +1,11 @@
+[
+  {"name": "id", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "date", "type": "DATE", "mode": "NULLABLE"},
+  {"name": "calories_active", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "calories_total", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "steps", "type": "INTEGER", "mode": "NULLABLE"},
+  {"name": "daily_movement", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "activity_score", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "inactivity_alerts", "type": "INTEGER", "mode": "NULLABLE"},
+  {"name": "average_met", "type": "FLOAT", "mode": "NULLABLE"}
+]

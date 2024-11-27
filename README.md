@@ -49,24 +49,85 @@ The platform utilizes the following GCP services:
 3. Install the package with development dependencies:
 
     ```bash
-    # Install with development dependencies
     pip install -e ".[dev]"
-    
-    # Or install only runtime dependencies
-    pip install -e .
     ```
 
-4. Set up environment variables:
+4. Set up infrastructure configuration:
 
     ```bash
-    # Create .env file in .config/development/
-    mkdir -p .config/development
-    touch .config/development/.env
-
-    # Add required environment variables
-    echo "OURA_API_TOKEN=your_token_here" >> .config/development/.env
-    echo "GOOGLE_APPLICATION_CREDENTIALS=.config/development/service-account.json" >> .config/development/.env
+    # Copy and edit Terraform variables
+    cp terraform/environments/development/terraform.tfvars.template terraform/environments/development/terraform.tfvars
+    
+    # Edit terraform.tfvars with your values:
+    # - project_id
+    # - service_account
+    # - oura_api_token
+    # etc.
     ```
+
+## Infrastructure Deployment
+
+1. Initialize Terraform:
+
+    ```bash
+    cd terraform/environments/development
+    terraform init
+    ```
+
+2. Deploy infrastructure and generate environment configuration:
+
+    ```bash
+    ./scripts/deploy.sh
+    ```
+
+    This script will:
+    - Apply Terraform configuration
+    - Generate `.env` file from Terraform outputs
+    - Deploy DAGs to Cloud Composer
+    - Set up required resources
+
+3. Verify deployment:
+
+    ```bash
+    # Check if .env file was generated
+    cat .config/development/.env
+    
+    # Verify infrastructure
+    terraform output
+    ```
+
+## Configuration Management
+
+This project uses a two-tier configuration approach:
+
+1. **Infrastructure Configuration** (`terraform.tfvars`):
+   - Contains all infrastructure-related variables
+   - Source of truth for resource names and settings
+   - Used by Terraform to provision infrastructure
+
+2. **Application Configuration** (`.env`):
+   - Automatically generated from Terraform outputs
+   - Used by Python applications and scripts
+   - Contains derived values from infrastructure
+
+### Managing Configurations
+
+- **Adding New Variables**:
+  1. Add to `variables.tf`
+  2. Set value in `terraform.tfvars`
+  3. Add to `outputs.tf` if needed by applications
+  4. Update `generate_env.sh` if needed
+
+- **Updating Existing Values**:
+  1. Modify `terraform.tfvars`
+  2. Run `./scripts/deploy.sh` to apply changes
+  3. New `.env` file will be generated automatically
+
+### Security Notes
+
+- Never commit `terraform.tfvars` or `.env` to version control
+- Keep sensitive values in Secret Manager (future enhancement)
+- Use service account keys only for local development
 
 ## GCP Project Setup
 
@@ -82,10 +143,14 @@ The platform utilizes the following GCP services:
     ```bash
     gcloud services enable \
         bigquery.googleapis.com \
-        storage.googleapis.com
+        storage.googleapis.com \
+        composer.googleapis.com \
+        compute.googleapis.com \
+        cloudresourcemanager.googleapis.com \
+        iam.googleapis.com
     ```
 
-3. Create service account and grant permissions:
+3. Create service account and download key:
 
     ```bash
     # Create service account
@@ -95,40 +160,24 @@ The platform utilizes the following GCP services:
     # Download service account key
     gcloud iam service-accounts keys create .config/development/service-account.json \
         --iam-account=kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com
-
-    # Grant necessary permissions
-    gcloud projects add-iam-policy-binding stefans-body-etl \
-        --member="serviceAccount:kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com" \
-        --role="roles/storage.objectViewer"
-
-    gcloud projects add-iam-policy-binding stefans-body-etl \
-        --member="serviceAccount:kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com" \
-        --role="roles/storage.objectCreator"
-
-    gcloud projects add-iam-policy-binding stefans-body-etl \
-        --member="serviceAccount:kirill-markin-mac@stefans-body-etl.iam.gserviceaccount.com" \
-        --role="roles/bigquery.dataEditor"
     ```
 
-4. Create GCS bucket and BigQuery dataset:
+4. Set up environment variables:
 
     ```bash
-    # Create GCS bucket
-    gcloud storage buckets create gs://oura-raw-data \
-        --project=stefans-body-etl \
-        --location=US \
-        --uniform-bucket-level-access
+    # Create .env file in .config/development/
+    mkdir -p .config/development
+    cp .config/development/.env.template .config/development/.env
 
-    # Create BigQuery dataset
-    bq --location=US mk \
-        --dataset \
-        stefans-body-etl:oura_data
+    # Edit .env file with your values
+    # GOOGLE_APPLICATION_CREDENTIALS=.config/development/service-account.json
+    # OURA_API_TOKEN=your_token_here
     ```
 
 ## Running the Pipeline
 
 1. Configure Oura Ring API token:
-   - Generate token at https://cloud.ouraring.com/personal-access-tokens
+   - Generate token at `https://cloud.ouraring.com/personal-access-tokens`
    - Add to `.config/development/.env` as `OURA_API_TOKEN`
 
 2. Run the pipeline:
@@ -157,6 +206,40 @@ The platform utilizes the following GCP services:
 - View raw data in GCS: `gs://oura-raw-data/raw/oura/`
 - Query data in BigQuery: `stefans-body-etl.oura_data.*`
 - Check logs in Cloud Logging for detailed pipeline execution information
+
+## Monitoring & Management URLs
+
+### Main Dashboards
+
+- Project Dashboard: `https://console.cloud.google.com/home/dashboard`
+- APIs Dashboard: `https://console.cloud.google.com/apis/dashboard`
+- Enabled APIs: `https://console.cloud.google.com/apis/enabled`
+
+### Data Storage & Processing
+
+- BigQuery Dataset: `https://console.cloud.google.com/bigquery`
+- Cloud Storage Browser: `https://console.cloud.google.com/storage/browser`
+- Cloud Composer (Airflow): `https://console.cloud.google.com/composer/environments`
+
+### Monitoring & Logging
+
+- Cloud Monitoring: `https://console.cloud.google.com/monitoring`
+- Cloud Logging: `https://console.cloud.google.com/logs/query`
+- Error Reporting: `https://console.cloud.google.com/errors`
+
+### Security & IAM
+
+- IAM & Admin: `https://console.cloud.google.com/iam-admin/iam`
+- Service Accounts: `https://console.cloud.google.com/iam-admin/serviceaccounts`
+
+### Deployment & Infrastructure
+
+- Cloud Console: `https://console.cloud.google.com/home/dashboard`
+- Cloud Storage Browser: `https://console.cloud.google.com/storage/browser`
+- BigQuery: `https://console.cloud.google.com/bigquery`
+- Cloud Composer: `https://console.cloud.google.com/composer/environments`
+
+Note: Append `?project=YOUR_PROJECT_ID` to any URL to view resources for a specific project.
 
 ## Data Points Collected
 
@@ -207,10 +290,90 @@ The project follows a modular structure with separate directories for each data 
 ./scripts/format.sh
 ```
 
-## Contributing
+### Deployment
+
+```bash
+./scripts/deploy.sh
+```
+
+### Contributing
 
 Please read [CONTRIBUTING.md](docs/contributing.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Infrastructure Deployment
+
+### Prerequisites
+
+1. Install Terraform:
+
+    ```bash
+    brew install terraform  # On macOS
+    # or
+    apt-get install terraform  # On Ubuntu/Debian
+    ```
+
+2. Initialize Terraform:
+
+    ```bash
+    cd terraform/environments/development
+    terraform init
+    ```
+
+### Deployment
+
+1. Review the infrastructure changes:
+
+    ```bash
+    terraform plan
+    ```
+
+2. Deploy the infrastructure:
+
+    ```bash
+    ./scripts/deploy.sh
+    ```
+
+   This will:
+   - Initialize Terraform
+   - Plan and apply infrastructure changes
+   - Deploy DAGs to Cloud Composer
+   - Set up BigQuery tables
+   - Configure GCS buckets
+
+3. To destroy infrastructure:
+
+    ```bash
+    ./scripts/destroy.sh
+    ```
+
+### Infrastructure Components
+
+The following components will be created:
+- Google Cloud Storage bucket for raw data
+- BigQuery dataset and tables for processed data
+- Cloud Composer environment for orchestration
+- IAM roles and permissions
+
+## Terraform Structure
+
+```terraform
+terraform/
+├── environments/
+│   └── development/          # Development environment configuration
+│       ├── main.tf          # Main configuration file
+│       ├── variables.tf     # Input variables
+│       └── terraform.tfvars # Variable values
+└── modules/
+    ├── storage/             # GCS bucket configuration
+    ├── bigquery/           # BigQuery dataset and tables
+    └── composer/           # Cloud Composer environment
+```
+
+Each module manages specific GCP resources:
+- `storage`: Configures GCS buckets for raw data storage
+- `bigquery`: Sets up datasets and tables for processed data
+- `composer`: Manages Cloud Composer environment for DAG orchestration

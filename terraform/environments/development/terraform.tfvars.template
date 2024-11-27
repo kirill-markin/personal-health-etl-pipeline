@@ -1,0 +1,18 @@
+# Infrastructure Configuration Template
+# Copy this file to terraform.tfvars and update the values
+
+# Project Settings
+project_id       = "your-project-id"
+region          = "europe-west1"
+location        = "EU"
+
+# Resource Names
+environment_name = "oura-etl-environment"
+bucket_name     = "oura-raw-data"
+dataset_id      = "oura_data"
+
+# Service Account
+service_account = "your-service-account@project.iam.gserviceaccount.com"
+
+# API Tokens
+oura_api_token = "your-oura-api-token"

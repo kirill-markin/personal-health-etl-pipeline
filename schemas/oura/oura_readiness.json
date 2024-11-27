@@ -1,0 +1,7 @@
+[
+  {"name": "id", "type": "STRING", "mode": "NULLABLE"},
+  {"name": "date", "type": "DATE", "mode": "NULLABLE"},
+  {"name": "score", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "temperature_trend_deviation", "type": "FLOAT", "mode": "NULLABLE"},
+  {"name": "hrv_balance_score", "type": "FLOAT", "mode": "NULLABLE"}
+]
