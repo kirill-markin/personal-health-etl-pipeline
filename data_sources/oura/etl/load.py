@@ -91,19 +91,26 @@ class OuraLoader:
             logger.error(f"Error loading schema for {table_name}: {e}")
             raise
 
-    def load_to_bigquery(self, df: pd.DataFrame, table_name: str):
-        """Load transformed data to BigQuery"""
+    def load_to_bigquery(self, df: pd.DataFrame, table_name: str) -> None:
+        """
+        Load transformed data to BigQuery using WRITE_APPEND disposition
+        
+        Args:
+            df: DataFrame to load
+            table_name: Target table name
+        """
         dataset_ref = self.bq_client.dataset(self.config.dataset_id)
         table_ref = dataset_ref.table(table_name)
         
         # Get schema for this specific table
         schema = self._get_table_schema(table_name)
         
+        # Configure job to append data
         job_config = bigquery.LoadJobConfig(
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            schema=schema if schema else None  # Use schema if available, otherwise auto-detect
+            schema=schema if schema else None
         )
-        
+
         try:
             job = self.bq_client.load_table_from_dataframe(
                 df,
