@@ -109,15 +109,32 @@ def get_raw_data_dates(raw_data_path: Path) -> Dict[str, Set[datetime.date]]:
             'readiness': set()
         }
 
-def get_extract_date_range(raw_dates: Dict[str, Set[datetime.date]]) -> Tuple[datetime.date, datetime.date]:
-    """Calculate date range for extraction from API"""
-    end_date = datetime.now().date()
-    latest_raw_date = get_latest_date(raw_dates)
+def get_dates_to_extract(
+    raw_dates: Dict[str, Set[datetime.date]], 
+    end_date: datetime.date
+) -> Tuple[datetime.date, datetime.date]:
+    """
+    Calculate date range for extraction, considering only raw data dates.
     
-    if latest_raw_date:
-        start_date = latest_raw_date + timedelta(days=1)
+    Args:
+        raw_dates: Dictionary mapping data types to sets of dates in raw storage
+        end_date: Upper bound for date range (usually current date)
+        
+    Returns:
+        Tuple of start_date and end_date for extraction
+    """
+    # Combine all existing dates from raw storage
+    all_raw_dates = set().union(*raw_dates.values())
+    
+    if all_raw_dates:
+        start_date = max(all_raw_dates) + timedelta(days=1)
     else:
         start_date = end_date - timedelta(days=365)
+        
+    # Don't try to fetch future dates
+    if start_date > end_date:
+        logger.info("No new dates to extract")
+        return end_date, end_date
         
     return start_date, end_date
 

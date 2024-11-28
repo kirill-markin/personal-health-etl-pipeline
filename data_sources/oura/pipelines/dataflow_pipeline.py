@@ -71,12 +71,19 @@ class OuraPipeline:
         Args:
             start_date: Start date for data extraction
             end_date: End date for data extraction
-            existing_dates: Dictionary of existing dates per data type
+            existing_dates: Dictionary of existing dates per data type, defaults to None
         """
-        logger.info(
-            f"Starting Oura pipeline run: start_date={start_date}, "
-            f"end_date={end_date}, existing_dates_count={sum(len(d) for d in existing_dates.values() if d)}"
-        )
+        logger.info(f"Starting Oura pipeline run: start_date={start_date}, end_date={end_date}")
+        
+        # Initialize empty dict if existing_dates is None
+        existing_dates = existing_dates or {
+            'activity': set(),
+            'sleep': set(),
+            'readiness': set()
+        }
+        
+        logger.info(f"Found {sum(len(dates) for dates in existing_dates.values())} existing records")
+        
         try:
             # Extract
             logger.info("Starting data extraction")
@@ -87,12 +94,11 @@ class OuraPipeline:
             transformed_data = self.transformer.transform_data(raw_data)
             
             # Filter out existing dates
-            if existing_dates:
-                for data_type, df in transformed_data.items():
-                    if not df.empty and 'date' in df.columns and data_type in existing_dates:
-                        new_df = df[~df['date'].isin(existing_dates[data_type])]
-                        transformed_data[data_type] = new_df
-                        logger.info(f"Filtered {len(df) - len(new_df)} existing records from {data_type}")
+            for data_type, df in transformed_data.items():
+                if not df.empty and 'date' in df.columns and data_type in existing_dates:
+                    new_df = df[~df['date'].isin(existing_dates[data_type])]
+                    transformed_data[data_type] = new_df
+                    logger.info(f"Filtered {len(df) - len(new_df)} existing records from {data_type}")
             
             # Save raw data to GCS and load to BigQuery only if we have new data
             for data_type, df in transformed_data.items():

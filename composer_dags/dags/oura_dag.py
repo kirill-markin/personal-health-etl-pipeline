@@ -6,7 +6,7 @@ import logging
 import os
 import json
 from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecretManagerHook
-from data_sources.oura.utils.common_utils import get_raw_data_dates, get_extract_date_range, get_dates_for_transform
+from data_sources.oura.utils.common_utils import get_raw_data_dates, get_dates_to_extract, get_dates_for_transform
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,15 @@ def get_config() -> Dict[str, Dict[str, Any]]:
             "endpoints": {
                 "sleep": "/usercollection/sleep",
                 "activity": "/usercollection/daily_activity",
-                "readiness": "/usercollection/daily_readiness"
+                "readiness": "/usercollection/daily_readiness",
+                # FIXME: add more tables
+                # "personal_info": "/usercollection/personal_info",
+                # "sessions": "/usercollection/session",
+                # "tags": "/usercollection/tag",
+                # "workouts": "/usercollection/workout",
+                # "heart_rate": "/usercollection/heartrate",
+                # "daily_spo2": "/usercollection/daily_spo2",
+                # "stress": "/usercollection/daily_stress"
             }
         }
         return {"api": api_config, "gcp": gcp_config}
@@ -79,25 +87,22 @@ def run_extract_pipeline(**context) -> None:
     config = get_config()
     pipeline = OuraPipeline(config)
     
-    # Get existing dates from both raw data and BigQuery
+    # Get existing dates from raw data only
     raw_dates = get_raw_data_dates(pipeline.raw_data_path)
-    bq_dates = {
-        'activity': pipeline.loader.get_existing_dates('oura_activity'),
-        'sleep': pipeline.loader.get_existing_dates('oura_sleep'),
-        'readiness': pipeline.loader.get_existing_dates('oura_readiness')
-    }
+    end_date = datetime.now().date()
     
-    # Calculate date range based on raw data dates
-    start_date, end_date = get_extract_date_range(raw_dates)
+    # Calculate date range based on raw data dates only
+    start_date, end_date = get_dates_to_extract(raw_dates, end_date)
     
     if start_date > end_date:
         logger.info("No new data to extract")
         return
             
     logger.info(f"Extracting data for range: {start_date} to {end_date}")
-    pipeline.run(start_date, end_date, existing_dates=bq_dates)
+    pipeline.run(start_date, end_date)
 
 def run_transform_pipeline(**context) -> None:
+    """Transform and load data to BigQuery"""
     try:
         config = get_config()
         pipeline = OuraPipeline(config)
@@ -118,24 +123,20 @@ def run_transform_pipeline(**context) -> None:
             pipeline.transform(dates_to_transform)
         else:
             logger.info("No data to transform")
+            
     except Exception as e:
-        logger.error(f"Transform pipeline failed: {str(e)}")
+        logger.error(f"Transform pipeline failed: {e}")
         raise
 
-# Create separate tasks for extract and transform
 extract_task = PythonOperator(
     task_id='extract_data',
     python_callable=run_extract_pipeline,
-    retries=0,
-    retry_delay=timedelta(minutes=5),
     dag=dag,
 )
 
 transform_task = PythonOperator(
-    task_id='transform_data',
+    task_id='transform_and_load_data',
     python_callable=run_transform_pipeline,
-    retries=0,
-    retry_delay=timedelta(minutes=5),
     dag=dag,
 )
 
