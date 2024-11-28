@@ -164,3 +164,29 @@ class OuraLoader:
         except Exception as e:
             logger.error(f"Error reading raw data from GCS for {data_type} on {date}: {e}")
             return None
+
+    def check_existing_data(self, data_type: str, date: str) -> bool:
+        """
+        Check if data already exists in BigQuery for given date and data type
+        
+        Args:
+            data_type: Type of Oura data (activity, sleep, etc.)
+            date: Date to check in YYYY-MM-DD format
+        
+        Returns:
+            bool: True if data exists, False otherwise
+        """
+        query = f"""
+            SELECT COUNT(*) as count 
+            FROM `{self.config.project_id}.{self.config.dataset_id}.oura_{data_type}`
+            WHERE date = '{date}'
+        """
+        
+        try:
+            query_job = self.bq_client.query(query)
+            results = query_job.result()
+            row = next(results)
+            return row.count > 0
+        except Exception as e:
+            logger.error(f"Error checking existing data: {e}")
+            return False

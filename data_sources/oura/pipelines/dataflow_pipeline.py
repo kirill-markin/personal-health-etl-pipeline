@@ -39,15 +39,19 @@ class OuraPipeline:
                     
                 raw_data_by_date = {}
                 for date in dates:
+                    # First check if data already exists in BigQuery
+                    existing_data = self.loader.check_existing_data(data_type, date)
+                    if existing_data:
+                        logger.info(f"Data already exists for {data_type} on {date}, skipping")
+                        continue
+                    
                     raw_data = self.loader.get_raw_data(data_type, date)
                     if raw_data:
                         raw_data_by_date[date] = raw_data
                 
                 if raw_data_by_date:
-                    # Transform data for this type
                     transformed_data = self.transformer.transform_data({data_type: raw_data_by_date})
                     if data_type in transformed_data and not transformed_data[data_type].empty:
-                        # Load to BigQuery
                         self.loader.load_to_bigquery(
                             transformed_data[data_type], 
                             f"oura_{data_type}"

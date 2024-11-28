@@ -79,7 +79,15 @@ def run_extract_pipeline(**context) -> None:
     config = get_config()
     pipeline = OuraPipeline(config)
     
+    # Get existing dates from both raw data and BigQuery
     raw_dates = get_raw_data_dates(pipeline.raw_data_path)
+    bq_dates = {
+        'activity': pipeline.loader.get_existing_dates('oura_activity'),
+        'sleep': pipeline.loader.get_existing_dates('oura_sleep'),
+        'readiness': pipeline.loader.get_existing_dates('oura_readiness')
+    }
+    
+    # Calculate date range based on raw data dates
     start_date, end_date = get_extract_date_range(raw_dates)
     
     if start_date > end_date:
@@ -87,11 +95,7 @@ def run_extract_pipeline(**context) -> None:
         return
             
     logger.info(f"Extracting data for range: {start_date} to {end_date}")
-    pipeline.run(start_date, end_date, existing_dates={
-        'activity': set(),
-        'sleep': set(),
-        'readiness': set()
-    })
+    pipeline.run(start_date, end_date, existing_dates=bq_dates)
 
 def run_transform_pipeline(**context) -> None:
     try:
