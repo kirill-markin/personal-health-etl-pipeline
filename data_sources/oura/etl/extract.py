@@ -1,16 +1,20 @@
 import os
 import requests
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Union
 import yaml
 import logging
 
 logger = logging.getLogger(__name__)
 
 class OuraExtractor:
-    def __init__(self, config_path: str):
-        self.config = self._load_config(config_path)
-        self.token = os.getenv('OURA_API_TOKEN')
+    def __init__(self, config: Union[str, Dict[str, Any]]):
+        if isinstance(config, str):
+            self.config = self._load_config(config)
+        else:
+            self.config = config
+        
+        self.token = os.environ.get('OURA_API_TOKEN')
         if not self.token:
             raise ValueError("OURA_API_TOKEN environment variable not set")
         

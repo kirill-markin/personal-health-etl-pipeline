@@ -1,7 +1,7 @@
 from google.cloud import storage, bigquery
 from google.api_core import exceptions
 import pandas as pd
-from typing import Dict, List
+from typing import Dict, List, Union, Any
 import logging
 import json
 from datetime import datetime
@@ -10,8 +10,11 @@ import yaml
 logger = logging.getLogger(__name__)
 
 class OuraLoader:
-    def __init__(self, config_path: str):
-        self.config = self._load_config(config_path)
+    def __init__(self, config: Union[str, Dict[str, Any]]):
+        if isinstance(config, str):
+            self.config = self._load_config(config)
+        else:
+            self.config = config
         self.storage_client = storage.Client()
         self.bq_client = bigquery.Client()
         self._verify_bucket_exists()

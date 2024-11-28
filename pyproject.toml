@@ -40,6 +40,7 @@ dev = [
     "pre-commit~=3.5.0",
     "ruff~=0.1.9",
     "apache-airflow~=2.7.0",
+    "apache-airflow-providers-google>=10.3.0",
 ]
 
 [project.urls]

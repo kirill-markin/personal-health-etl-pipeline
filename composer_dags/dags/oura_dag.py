@@ -6,19 +6,27 @@ from data_sources.oura.pipelines.dataflow_pipeline import OuraPipeline
 import logging
 import os
 import json
+from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecretManagerHook
 
 logger = logging.getLogger(__name__)
 
 # Get configurations from Airflow Variables
 def get_config():
     try:
-        gcp_config = Variable.get("oura_gcp_config", deserialize_json=True)
-    except ValueError as e:
-        logger.error("Failed to parse oura_gcp_config: Make sure it's valid JSON")
-        raise
-    except KeyError as e:
-        logger.error("Missing required Airflow Variable: oura_gcp_config")
-        logger.error("Please set this variable in the Airflow UI with your GCP configuration")
+        # Initialize Secret Manager Hook
+        sm_hook = GoogleCloudSecretManagerHook()
+        
+        # Get secret from Secret Manager
+        secret_response = sm_hook.access_secret(
+            secret_id="oura_gcp_config",
+            project_id="stefans-body-etl"
+        )
+        
+        # Access the payload from the response
+        gcp_config = json.loads(secret_response.payload.data.decode('UTF-8'))
+        
+    except Exception as e:
+        logger.error(f"Failed to get config from Secret Manager: {e}")
         raise
 
     if not os.environ.get('OURA_API_TOKEN'):

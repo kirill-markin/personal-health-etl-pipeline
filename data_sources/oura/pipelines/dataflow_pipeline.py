@@ -3,15 +3,16 @@ import logging
 from data_sources.oura.etl.extract import OuraExtractor
 from data_sources.oura.etl.transform import OuraTransformer
 from data_sources.oura.etl.load import OuraLoader
+from typing import Union, Dict, Any
 
 logger = logging.getLogger(__name__)
 
 class OuraPipeline:
-    def __init__(self, config_path: str):
-        self.config_path = config_path
-        self.extractor = OuraExtractor(config_path)
+    def __init__(self, config: Union[str, Dict[str, Any]]):
+        self.config = config
+        self.extractor = OuraExtractor(config)
         self.transformer = OuraTransformer()
-        self.loader = OuraLoader(config_path)
+        self.loader = OuraLoader(config)
     
     def run(self, start_date: datetime, end_date: datetime):
         """Run the complete ETL pipeline"""

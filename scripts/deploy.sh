@@ -11,10 +11,10 @@ cd terraform/environments/development
 terraform init
 
 # Plan the changes
-terraform plan -out=tfplan
+terraform plan -out=".tfplan"
 
 # Apply the changes
-terraform apply tfplan
+terraform apply ".tfplan"
 
 # FIXME
 # # Generate new .env file

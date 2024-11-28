@@ -19,19 +19,15 @@ resource "google_storage_bucket_object" "dag" {
   }
 }
 
-# For data sources
+# For data sources - maintain package structure
 resource "google_storage_bucket_object" "data_sources" {
   for_each = fileset("../../../data_sources", "**/*.py")
   
+  # Ensure __init__.py files are included
   name         = "plugins/data_sources/${each.value}"
   source       = "../../../data_sources/${each.value}"
   content_type = "application/x-python"
   bucket       = var.composer_bucket
-
-  metadata = {
-    deployed_by = "terraform"
-    deploy_time = timestamp()
-  }
 }
 
 # Add config files to a separate configs folder in Composer
