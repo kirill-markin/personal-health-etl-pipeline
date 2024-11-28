@@ -4,27 +4,23 @@ from datetime import datetime
 from typing import Dict, Any, Union
 import yaml
 import logging
+from data_sources.oura.config.config import OuraConfig
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 class OuraExtractor:
-    def __init__(self, config: Union[str, Dict[str, Any]]):
-        if isinstance(config, str):
-            self.config = self._load_config(config)
-        else:
+    def __init__(self, config: Union[str, Dict[str, Any], OuraConfig]):
+        if isinstance(config, OuraConfig):
             self.config = config
+        elif isinstance(config, dict):
+            self.config = OuraConfig.from_dict(config)
+        else:
+            self.config = OuraConfig.from_yaml(Path(config))
         
-        self.token = os.environ.get('OURA_API_TOKEN')
-        if not self.token:
-            raise ValueError("OURA_API_TOKEN environment variable not set")
-        
-    def _load_config(self, config_path: str) -> Dict[str, Any]:
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
-    
     def _make_request(self, endpoint: str, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
-        headers = {"Authorization": f"Bearer {self.token}"}
-        url = f"{self.config['api']['base_url']}{endpoint}"
+        headers = {"Authorization": f"Bearer {self.config.api_token}"}
+        url = f"{self.config.api_base_url}{endpoint}"
         
         params = {
             "start_date": start_date.strftime("%Y-%m-%d"),
@@ -43,7 +39,7 @@ class OuraExtractor:
         """Extract all data types from Oura API"""
         data = {}
         
-        for data_type, endpoint in self.config['api']['endpoints'].items():
+        for data_type, endpoint in self.config.endpoints.items():
             logger.info(f"Extracting {data_type} data")
             data[data_type] = self._make_request(endpoint, start_date, end_date)
             

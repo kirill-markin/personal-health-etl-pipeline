@@ -12,6 +12,7 @@ resource "google_composer_environment" "composer_env" {
       }
       
       env_variables = {
+        GCP_PROJECT_ID = var.project_id
         AIRFLOW_VAR_PROJECT_ID = var.project_id
         AIRFLOW_VAR_OURA_API_TOKEN = var.oura_api_token
         OURA_API_TOKEN = var.oura_api_token

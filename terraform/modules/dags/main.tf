@@ -46,3 +46,13 @@ resource "google_storage_bucket_object" "airflow_variables" {
   content_type = "application/json"
   bucket       = var.composer_bucket
 }
+
+# Add schema files to Composer
+resource "google_storage_bucket_object" "schemas" {
+  for_each = fileset("../../../schemas", "**/*.json")
+  
+  name         = "data/schemas/${each.value}"
+  source       = "../../../schemas/${each.value}"
+  content_type = "application/json"
+  bucket       = var.composer_bucket
+}
