@@ -7,6 +7,7 @@ import logging
 import os
 import json
 from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecretManagerHook
+from data_sources.oura.utils.common_utils import get_date_range, get_existing_dates
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +69,19 @@ def run_oura_pipeline(**context):
         config = get_config()
         pipeline = OuraPipeline(config)
         
-        # Set date range (previous day)
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=1)
+        # Get existing dates and calculate date range
+        existing_dates = get_existing_dates(pipeline)
+        start_date, end_date = get_date_range(existing_dates)
         
-        # Run pipeline
-        pipeline.run(start_date, end_date)
-        
+        # Only proceed if we have dates to fetch
+        if start_date <= end_date:
+            logger.info(f"Running pipeline for date range: {start_date} to {end_date}")
+            logger.info(f"Found existing dates: {existing_dates}")
+            
+            pipeline.run(start_date, end_date, existing_dates)
+        else:
+            logger.info("No new data to fetch - we're up to date")
+            
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
         raise

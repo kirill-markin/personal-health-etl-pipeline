@@ -108,3 +108,21 @@ class OuraLoader:
         except Exception as e:
             logger.error(f"Error loading data to BigQuery: {e}")
             raise
+
+    def get_existing_dates(self, table_name: str) -> set:
+        """Get set of dates that already exist in BigQuery table"""
+        query = f"""
+        SELECT DISTINCT date
+        FROM `{self.config['gcp']['project_id']}.{self.config['gcp']['dataset_id']}.{table_name}`
+        """
+        
+        try:
+            df = self.bq_client.query(query).to_dataframe()
+            if not df.empty:
+                # Convert the date column to datetime if it's not already
+                df['date'] = pd.to_datetime(df['date'])
+                return set(df['date'].dt.date)
+            return set()
+        except Exception as e:
+            logger.warning(f"Error getting existing dates: {e}")
+            return set()
