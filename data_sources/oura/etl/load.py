@@ -4,7 +4,7 @@ import pandas as pd
 from typing import Dict, List, Union, Any, Optional
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, date
 import yaml
 from data_sources.oura.config.config import OuraConfig
 from pathlib import Path
@@ -47,14 +47,15 @@ class OuraLoader:
             logger.error(f"Dataset {dataset_ref} does not exist")
             raise
     
-    def save_to_gcs(self, data: Dict, data_type: str, date: datetime) -> str:
+    def save_to_gcs(self, data: Dict, data_type: str, start_date: date, end_date: date) -> str:
         """Save raw data to Google Cloud Storage"""
         bucket = self.storage_client.bucket(self.config.bucket_name)
         
         # Format the blob path using the config template
-        blob_path = self.config.raw_data_path.format(
+        blob_path = self.config.raw_data_path_str.format(
             data_type=data_type,
-            date=date.strftime("%Y-%m-%d")
+            start_date=start_date.strftime("%Y-%m-%d"),
+            end_date=end_date.strftime("%Y-%m-%d")
         )
         
         blob = bucket.blob(f"{blob_path}/data.json")
@@ -142,27 +143,70 @@ class OuraLoader:
             logger.warning(f"Error getting existing dates: {e}")
             return set()
 
-    def get_raw_data(self, data_type: str, date: datetime.date) -> Optional[Dict[str, Any]]:
-        """Get raw data from GCS for specific date and data type"""
+    def get_raw_data(self, data_type: str, start_date: date, end_date: date) -> Optional[Dict[str, Any]]:
+        """
+        Get raw data from GCS for specific date range and data type.
+        Searches through all available blobs and combines data points that fall within the requested range.
+        
+        Args:
+            data_type: Type of data (activity, sleep, etc.)
+            start_date: Start date of the range
+            end_date: End date of the range
+            
+        Returns:
+            Optional[Dict[str, Any]]: Combined data for the requested date range, or None if no data found
+        """
         try:
             bucket = self.storage_client.bucket(self.config.bucket_name)
-            
-            blob_path = self.config.raw_data_path.format(
+            base_path = self.config.raw_data_path_str.format(
                 data_type=data_type,
-                date=date.strftime("%Y-%m-%d")
-            )
+                date="*",  # Use wildcard to list all blobs for this data type
+                start_date="*",
+                end_date="*"
+            ).rsplit('/', 1)[0]  # Remove the 'data.json' part
             
-            blob = bucket.blob(f"{blob_path}/data.json")
+            # List all blobs in the data type directory
+            blobs = bucket.list_blobs(prefix=base_path)
             
-            if not blob.exists():
-                logger.info(f"No data found for {data_type} on {date}")
+            combined_data: List[Dict[str, Any]] = []
+            
+            for blob in blobs:
+                if not blob.name.endswith('data.json'):
+                    continue
+                    
+                try:
+                    content = blob.download_as_string()
+                    blob_data = json.loads(content)
+                    
+                    # Filter data points within the requested date range
+                    for record in blob_data.get('data', []):
+                        if 'day' not in record:
+                            raise ValueError(f"Missing 'day' field in record: {record}")
+                            
+                        record_date = datetime.strptime(record['day'], '%Y-%m-%d').date()
+                        if start_date <= record_date <= end_date:
+                            combined_data.append(record)
+                            
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(f"Error parsing data from blob {blob.name}: {e}")
+                    continue
+            
+            if not combined_data:
+                logger.info(f"No data found for {data_type} between {start_date} and {end_date}")
                 return None
-            
-            content = blob.download_as_string()
-            return json.loads(content)
+                
+            # Return in the same format as the original data
+            return {
+                'data': combined_data,
+                'is_processed': True,  # Add flag to indicate this is processed data
+                'date_range': {
+                    'start': start_date.isoformat(),
+                    'end': end_date.isoformat()
+                }
+            }
             
         except Exception as e:
-            logger.error(f"Error reading raw data from GCS for {data_type} on {date}: {e}")
+            logger.error(f"Error reading raw data from GCS for {data_type} between {start_date} and {end_date}: {e}")
             return None
 
     def check_existing_data(self, data_type: str, date: str) -> bool:

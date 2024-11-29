@@ -14,5 +14,4 @@ gcp:
   project_id: "${data.terraform_remote_state.oura.outputs.project_id}"
   
   # GCS paths
-  raw_data_path: "raw/oura/{data_type}/{date}"
-  processed_data_path: "processed/oura/{data_type}/{date}"
+  raw_data_path_str: "raw/oura/{data_type}/{start_date}_{end_date}"

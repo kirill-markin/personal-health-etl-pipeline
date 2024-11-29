@@ -1,6 +1,6 @@
 import os
 import requests
-from datetime import datetime
+from datetime import date
 from typing import Dict, Any, Union
 import yaml
 import logging
@@ -18,7 +18,7 @@ class OuraExtractor:
         else:
             self.config = OuraConfig.from_yaml(Path(config))
         
-    def _make_request(self, endpoint: str, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+    def _make_request(self, endpoint: str, start_date: date, end_date: date) -> Dict[str, Any]:
         headers = {"Authorization": f"Bearer {self.config.api_token}"}
         url = f"{self.config.api_base_url}{endpoint}"
         
@@ -35,7 +35,7 @@ class OuraExtractor:
             logger.error(f"Error fetching data from Oura API: {e}")
             raise
     
-    def extract_data(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
+    def extract_data(self, start_date: date, end_date: date) -> Dict[str, Any]:
         """Extract all data types from Oura API"""
         data = {}
         

@@ -13,8 +13,7 @@ class OuraConfig:
     dataset_id: str
     project_id: str
     location: str
-    raw_data_path: str
-    processed_data_path: str
+    raw_data_path_str: str
     endpoints: Dict[str, str]
 
     @classmethod
@@ -28,8 +27,7 @@ class OuraConfig:
                 dataset_id=config['gcp']['dataset_id'],
                 project_id=config['gcp']['project_id'],
                 location=config['gcp']['location'],
-                raw_data_path=config['gcp']['raw_data_path'],
-                processed_data_path=config['gcp']['processed_data_path'],
+                raw_data_path_str=config['gcp']['raw_data_path_str'],
                 endpoints=config['api']['endpoints']
             )
         except KeyError as e:

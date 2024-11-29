@@ -8,7 +8,7 @@ import json
 from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecretManagerHook
 from data_sources.oura.utils.common_utils import get_raw_data_dates, get_dates_to_extract, get_dates_for_transform
 from typing import Dict, Any
-
+from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Get configurations from Airflow Variables
@@ -84,48 +84,78 @@ dag = DAG(
 
 def run_extract_pipeline(**context) -> None:
     """Extract data from Oura API"""
+    logger.info("Starting extract pipeline")
     config = get_config()
     pipeline = OuraPipeline(config)
     
     # Get existing dates from raw data only
-    raw_dates = get_raw_data_dates(pipeline.raw_data_path)
-    end_date = datetime.now().date()
+    raw_dates = get_raw_data_dates(Path(pipeline.raw_data_path_str))
+    
+    # Log existing data stats
+    for data_type, dates in raw_dates.items():
+        logger.info(f"Found {len(dates)} existing {data_type} records")
+        if dates:
+            logger.info(f"Existing {data_type} date range: {min(dates)} to {max(dates)}")
     
     # Calculate date range based on raw data dates only
-    start_date, end_date = get_dates_to_extract(raw_dates, end_date)
+    start_date, end_date = get_dates_to_extract(raw_dates)
     
     if start_date > end_date:
-        logger.info("No new data to extract")
+        logger.info(f"No new data to extract: start_date ({start_date}) > end_date ({end_date})")
         return
             
-    logger.info(f"Extracting data for range: {start_date} to {end_date}")
+    logger.info(f"Starting extraction for date range: {start_date} to {end_date}")
+    logger.info(f"Will extract {(end_date - start_date).days + 1} days of data")
+    
     pipeline.run(start_date, end_date)
+    logger.info("Extract pipeline completed successfully")
 
 def run_transform_pipeline(**context) -> None:
     """Transform and load data to BigQuery"""
     try:
+        logger.info("Starting transform pipeline")
         config = get_config()
         pipeline = OuraPipeline(config)
         
         # Get dates from raw data and BigQuery
-        raw_dates = get_raw_data_dates(pipeline.raw_data_path)
+        raw_dates = get_raw_data_dates(Path(pipeline.raw_data_path_str))
+        logger.info("Raw data statistics:")
+        for data_type, dates in raw_dates.items():
+            logger.info(f"- {data_type}: {len(dates)} records")
+            if dates:
+                logger.info(f"  Date range: {min(dates)} to {max(dates)}")
+        
         bq_dates = {
             'activity': pipeline.loader.get_existing_dates('oura_activity'),
             'sleep': pipeline.loader.get_existing_dates('oura_sleep'),
             'readiness': pipeline.loader.get_existing_dates('oura_readiness')
         }
         
+        logger.info("BigQuery data statistics:")
+        for data_type, dates in bq_dates.items():
+            logger.info(f"- {data_type}: {len(dates)} records")
+            if dates:
+                logger.info(f"  Date range: {min(dates)} to {max(dates)}")
+        
         # Find dates to transform
         dates_to_transform = get_dates_for_transform(raw_dates, bq_dates)
         
         if any(dates for dates in dates_to_transform.values()):
-            logger.info(f"Transforming data for dates: {dates_to_transform}")
+            logger.info("Dates requiring transformation:")
+            for data_type, dates in dates_to_transform.items():
+                if dates:
+                    logger.info(f"- {data_type}: {len(dates)} dates")
+                    logger.info(f"  Range: {min(dates)} to {max(dates)}")
+                    logger.info(f"  Specific dates: {sorted(dates)}")
+            
+            logger.info("Starting data transformation")
             pipeline.transform(dates_to_transform)
+            logger.info("Transform pipeline completed successfully")
         else:
-            logger.info("No data to transform")
+            logger.info("No new data to transform - all raw data is already in BigQuery")
             
     except Exception as e:
-        logger.error(f"Transform pipeline failed: {e}")
+        logger.error(f"Transform pipeline failed with error: {str(e)}")
         raise
 
 extract_task = PythonOperator(

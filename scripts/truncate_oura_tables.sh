@@ -25,3 +25,8 @@ for table in "${TABLES[@]}"; do
 done
 
 echo "All tables truncated successfully!"
+
+# To remove all raw data manually run:
+# ```bash
+# gcloud storage rm --recursive "gs://oura-raw-data/raw/oura/**"
+# ```

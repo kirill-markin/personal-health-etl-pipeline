@@ -21,8 +21,7 @@ resource "google_composer_environment" "composer_env" {
           dataset_id         = var.dataset_id
           location          = var.location
           project_id        = var.project_id
-          raw_data_path     = "raw/oura/{data_type}/{date}"
-          processed_data_path = "processed/oura/{data_type}/{date}"
+          raw_data_path_str     = "raw/oura/{data_type}/{start_date}_{end_date}"
         })
       }
     }
@@ -44,8 +43,7 @@ resource "google_storage_bucket_object" "airflow_variables" {
       dataset_id         = var.dataset_id
       location          = var.location
       project_id        = var.project_id
-      raw_data_path     = "raw/oura/{data_type}/{date}"
-      processed_data_path = "processed/oura/{data_type}/{date}"
+      raw_data_path_str     = "raw/oura/{data_type}/{start_date}_{end_date}"
     }
   })
   content_type = "application/json"
@@ -85,8 +83,7 @@ resource "google_secret_manager_secret_version" "oura_config_version" {
     dataset_id         = var.dataset_id
     location          = var.location
     project_id        = var.project_id
-    raw_data_path     = "raw/oura/{data_type}/{date}"
-    processed_data_path = "processed/oura/{data_type}/{date}"
+    raw_data_path_str     = "raw/oura/{data_type}/{start_date}_{end_date}"
   })
 }
 

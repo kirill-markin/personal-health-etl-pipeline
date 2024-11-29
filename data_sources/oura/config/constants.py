@@ -10,5 +10,4 @@ DATA_TYPES: Final[tuple[str, ...]] = ('activity', 'sleep', 'readiness')
 BQ_TABLE_PREFIX: Final[str] = 'oura_'
 
 # GCS path templates
-RAW_DATA_PATH_TEMPLATE: Final[str] = 'raw/oura/{data_type}/{date}'
-PROCESSED_DATA_PATH_TEMPLATE: Final[str] = 'processed/oura/{data_type}/{date}'
+RAW_DATA_PATH_TEMPLATE: Final[str] = 'raw/oura/{data_type}/{start_date}_{end_date}'

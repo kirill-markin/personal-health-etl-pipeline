@@ -77,7 +77,7 @@ class OuraTransformer:
         df = pd.DataFrame(sleep_records)
         
         if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date']).dt.date
+            df['date'] = pd.to_datetime(df['date']).date()
             
             # Convert durations from seconds to hours
             duration_columns = ['duration', 'light_sleep_duration', 
@@ -134,7 +134,7 @@ class OuraTransformer:
         df = pd.DataFrame(activity_records)
         
         if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date']).dt.date
+            df['date'] = pd.to_datetime(df['date']).date()
             
             # Convert time fields from seconds to hours
             time_columns = ['high_activity_time', 'medium_activity_time', 
@@ -177,7 +177,7 @@ class OuraTransformer:
         
         # Ensure date column is date type
         if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date']).dt.date
+            df['date'] = pd.to_datetime(df['date']).date()
         
         return df
     
