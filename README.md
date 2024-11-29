@@ -42,8 +42,8 @@ The platform utilizes the following GCP services:
 2. Create and activate virtual environment:
 
     ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    python3.11 -m venv .venv
+    source .venv/bin/activate # On Windows: .venv\Scripts\activate
     ```
 
 3. Install the package with development dependencies:
@@ -303,77 +303,3 @@ Please read [CONTRIBUTING.md](docs/contributing.md) for details on our code of c
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Infrastructure Deployment
-
-### Prerequisites
-
-1. Install Terraform:
-
-    ```bash
-    brew install terraform  # On macOS
-    # or
-    apt-get install terraform  # On Ubuntu/Debian
-    ```
-
-2. Initialize Terraform:
-
-    ```bash
-    cd terraform/environments/development
-    terraform init
-    ```
-
-### Deployment
-
-1. Review the infrastructure changes:
-
-    ```bash
-    terraform plan
-    ```
-
-2. Deploy the infrastructure:
-
-    ```bash
-    ./scripts/deploy.sh
-    ```
-
-   This will:
-   - Initialize Terraform
-   - Plan and apply infrastructure changes
-   - Deploy DAGs to Cloud Composer
-   - Set up BigQuery tables
-   - Configure GCS buckets
-
-3. To destroy infrastructure:
-
-    ```bash
-    ./scripts/destroy.sh
-    ```
-
-### Infrastructure Components
-
-The following components will be created:
-- Google Cloud Storage bucket for raw data
-- BigQuery dataset and tables for processed data
-- Cloud Composer environment for orchestration
-- IAM roles and permissions
-
-## Terraform Structure
-
-```terraform
-terraform/
-├── environments/
-│   └── development/          # Development environment configuration
-│       ├── main.tf          # Main configuration file
-│       ├── variables.tf     # Input variables
-│       └── terraform.tfvars # Variable values
-└── modules/
-    ├── storage/             # GCS bucket configuration
-    ├── bigquery/           # BigQuery dataset and tables
-    └── composer/           # Cloud Composer environment
-```
-
-Each module manages specific GCP resources:
-- `storage`: Configures GCS buckets for raw data storage
-- `bigquery`: Sets up datasets and tables for processed data
-- `composer`: Manages Cloud Composer environment for DAG orchestration
