@@ -30,11 +30,11 @@ class OuraTransformer:
         for record in data.get('data', []):
             # Skip if missing required fields
             if not all(key in record for key in ['id', 'day']):
-                continue
+                raise ValueError(f"Missing required fields 'id' or 'day': {record}")
             
             date = self._convert_to_date(record.get('day'))
             if date is None:
-                continue
+                raise ValueError(f"Invalid date: {record.get('day')}")
             
             transformed_record = {
                 'id': record.get('id'),
@@ -77,7 +77,7 @@ class OuraTransformer:
         df = pd.DataFrame(sleep_records)
         
         if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date']).date()
+            df['date'] = pd.to_datetime(df['date']).dt.date
             
             # Convert durations from seconds to hours
             duration_columns = ['duration', 'light_sleep_duration', 
@@ -98,11 +98,11 @@ class OuraTransformer:
         for record in data.get('data', []):
             # Skip if missing required fields
             if not all(key in record for key in ['id', 'day']):
-                continue
+                raise ValueError(f"Missing required fields 'id' or 'day': {record}")
             
             date = self._convert_to_date(record.get('day'))
             if date is None:
-                continue
+                raise ValueError(f"Invalid date: {record.get('day')}")
             
             transformed_record = {
                 'id': record.get('id'),
@@ -133,9 +133,7 @@ class OuraTransformer:
         
         df = pd.DataFrame(activity_records)
         
-        if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date']).date()
-            
+        if not df.empty:
             # Convert time fields from seconds to hours
             time_columns = ['high_activity_time', 'medium_activity_time', 
                            'low_activity_time', 'sedentary_time', 
@@ -151,65 +149,84 @@ class OuraTransformer:
 
     def transform_readiness_data(self, data: Dict[str, Any]) -> pd.DataFrame:
         """Transform readiness data into a structured format"""
-        readiness_records = []
-        
-        for record in data.get('data', []):
-            # Skip if missing required fields
-            if not all(key in record for key in ['id', 'day']):
-                continue
+        try:
+            logger.info(f"Starting readiness transformation with {len(data.get('data', []))} records")
+            readiness_records = []
             
-            date = self._convert_to_date(record.get('day'))
-            if date is None:
-                continue
+            for record in data.get('data', []):
+                logger.info(f"Processing readiness record: {record.get('id')}")
+                
+                # Skip if missing required fields
+                if not all(key in record for key in ['id', 'day']):
+                    raise ValueError(f"Missing required fields 'id' or 'day': {record}")
+                
+                date = self._convert_to_date(record.get('day'))
+                if date is None:
+                    raise ValueError(f"Invalid date: {record.get('day')}")
+                
+                transformed_record = {
+                    'id': record.get('id'),
+                    'date': date,
+                    'score': record.get('score'),
+                    'temperature_trend_deviation': record.get('temperature_trend_deviation'),
+                    'hrv_balance_score': record.get('contributors', {}).get('hrv_balance'),
+                    'temperature_deviation': record.get('temperature_deviation')
+                }
+                
+                readiness_records.append(transformed_record)
             
-            transformed_record = {
-                'id': record.get('id'),
-                'date': date,
-                'score': record.get('score'),
-                'temperature_trend_deviation': record.get('temperature_trend_deviation'),
-                'hrv_balance_score': record.get('contributors', {}).get('hrv_balance'),
-                'temperature_deviation': record.get('temperature_deviation')
-            }
+            logger.info(f"Created {len(readiness_records)} transformed records")
             
-            readiness_records.append(transformed_record)
-        
-        df = pd.DataFrame(readiness_records)
-        
-        # Ensure date column is date type
-        if not df.empty and 'date' in df.columns:
-            df['date'] = pd.to_datetime(df['date']).date()
-        
-        return df
+            df = pd.DataFrame(readiness_records)
+            logger.info(f"Created DataFrame with shape: {df.shape}")
+            
+            # Ensure date column is date type
+            if not df.empty and 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date']).dt.date
+                logger.info("Successfully converted date column")
+            
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error in transform_readiness_data: {str(e)}", exc_info=True)
+            raise
     
-    def transform_data(self, raw_data: Dict[str, Any]) -> Dict[str, pd.DataFrame]:
+    def transform_data(self, raw_data: Dict[str, Dict[str, Any]]) -> Dict[str, pd.DataFrame]:
         """
         Transform all data types
         
         Args:
             raw_data: Dictionary containing raw data for each data type
+            Example: {'readiness': {'data': [...], 'is_processed': True}}
         
         Returns:
             Dictionary mapping data types to transformed DataFrames
         """
         transformed_data: Dict[str, pd.DataFrame] = {}
         
-        # Transform each data type if present in raw_data
-        if 'sleep' in raw_data and raw_data['sleep'].get('data'):
-            transformed_data['sleep'] = self.transform_sleep_data(raw_data['sleep'])
-            
-        if 'activity' in raw_data and raw_data['activity'].get('data'):
-            transformed_data['activity'] = self.transform_activity_data(raw_data['activity'])
-            
-        if 'readiness' in raw_data and raw_data['readiness'].get('data'):
-            transformed_data['readiness'] = self.transform_readiness_data(raw_data['readiness'])
+        try:
+            for data_type, data in raw_data.items():
+                logger.info(f"Processing {data_type} data")
+                
+                if data_type == 'sleep':
+                    transformed_data['sleep'] = self.transform_sleep_data(data)
+                    
+                elif data_type == 'activity':
+                    transformed_data['activity'] = self.transform_activity_data(data)
+                    
+                elif data_type == 'readiness':
+                    transformed_data['readiness'] = self.transform_readiness_data(data)
+                
+                if data_type in transformed_data:
+                    df = transformed_data[data_type]
+                    if not df.empty:
+                        logger.info(f"Transformed {data_type} data shape: {df.shape}")
+                        logger.info(f"Sample transformed record: {df.iloc[0].to_dict()}")
+                    else:
+                        logger.warning(f"Empty DataFrame for {data_type}")
         
-        # Ensure each DataFrame has required columns
-        for data_type, df in transformed_data.items():
-            if df.empty:
-                # Create empty DataFrame with required columns
-                transformed_data[data_type] = pd.DataFrame(columns=['id', 'date'])
-            elif 'date' not in df.columns:
-                logger.warning(f"Missing 'date' column in {data_type} DataFrame")
-                df['date'] = None
-            
+        except Exception as e:
+            logger.error(f"Error in transform_data: {str(e)}", exc_info=True)
+            raise
+        
         return transformed_data

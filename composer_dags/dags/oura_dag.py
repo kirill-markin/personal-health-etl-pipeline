@@ -123,74 +123,75 @@ def run_extract_pipeline(**context) -> None:
         raise
 
 def run_transform_pipeline(**context) -> None:
-    """Transform and load data to BigQuery"""
+    """Transform and load new data to BigQuery"""
     try:
         logger.info("Starting transform pipeline")
         config = get_config()
         _, transformer, loader = get_etl_components(config)
         
-        # Get dates from raw data and BigQuery
-        raw_data_path = f"{config['gcp']['bucket_name']}/raw/oura"
-        raw_dates = get_raw_data_dates(Path(raw_data_path))
-        
-        # Log statistics
-        logger.info("Raw data statistics:")
-        for data_type, dates in raw_dates.items():
-            logger.info(f"- {data_type}: {len(dates)} records")
-            if dates:
-                logger.info(f"  Date range: {min(dates)} to {max(dates)}")
-        
+        # Get latest dates from BigQuery for each data type
         bq_dates = {
             'activity': loader.get_existing_dates('oura_activity'),
             'sleep': loader.get_existing_dates('oura_sleep'),
             'readiness': loader.get_existing_dates('oura_readiness')
         }
         
-        logger.info("BigQuery data statistics:")
+        # Log BigQuery dates for each type
         for data_type, dates in bq_dates.items():
-            logger.info(f"- {data_type}: {len(dates)} records")
+            logger.info(f"Found {len(dates)} existing {data_type} records in BigQuery")
             if dates:
-                logger.info(f"  Date range: {min(dates)} to {max(dates)}")
+                logger.info(f"BigQuery {data_type} date range: {min(dates)} to {max(dates)}")
         
-        # Find dates to transform
-        dates_to_transform = get_dates_for_transform(raw_dates, bq_dates)
+        # Get raw data path
+        raw_data_path = f"{config['gcp']['bucket_name']}/raw/oura"
+        raw_dates = get_raw_data_dates(Path(raw_data_path))
         
-        # Log dates to transform
-        logger.info("Dates to transform:")
-        for data_type, dates in dates_to_transform.items():
-            logger.info(f"- {data_type}: {len(dates)} dates")
-            if dates:
-                logger.info(f"  Range: {min(dates)} to {max(dates)}")
-                logger.info(f"  Specific dates: {sorted(dates)}")
+        # Calculate end date (yesterday)
+        end_date = date.today() - timedelta(days=1)
         
-        if not any(dates for dates in dates_to_transform.values()):
-            logger.info("No new data to transform")
-            return
-            
-        # Process each data type
-        for data_type, dates in dates_to_transform.items():
-            if not dates:
-                continue
+        # Process each data type independently
+        for data_type in ('activity', 'sleep', 'readiness'):
+            if not raw_dates.get(data_type):
+                logger.info(f"No raw data found for {data_type}")
+                raise ValueError(f"No raw data found for {data_type}")
                 
-            raw_data_by_date = {}
-            for single_date in dates:
-                raw_data = loader.get_raw_data(data_type, single_date, single_date)
-                if raw_data:
-                    raw_data_by_date[single_date] = raw_data
+            # Get latest date for this specific data type
+            latest_date_for_type = max(bq_dates[data_type]) if bq_dates[data_type] else date.min
             
-            if raw_data_by_date:
-                transformed_data = transformer.transform_data({data_type: raw_data_by_date})
+            # Get dates after the latest BigQuery date for this type
+            new_dates = {d for d in raw_dates[data_type] if latest_date_for_type < d <= end_date}
+            logger.info(f"Found {len(new_dates)} new dates for {data_type}")
+            
+            if not new_dates:
+                logger.info(f"No new {data_type} data to transform")
+                continue
+            
+            start_date = min(new_dates)
+            logger.info(f"Processing {data_type} data from {start_date} to {end_date}")
+            
+            # Get raw data for the entire period
+            raw_data = loader.get_raw_data(data_type, start_date, end_date + timedelta(days=1))
+            if raw_data:
+                logger.info(f"Got {len(raw_data.get('data', []))} raw records for {data_type}")
+                logger.info(f"Raw data structure being passed to transformer: {raw_data.keys()}")
+                transformed_data = transformer.transform_data({data_type: raw_data})
+                logger.info(f"Transformed data for {data_type}: {transformed_data.get(data_type, 'No data')}")
+                
                 if data_type in transformed_data and not transformed_data[data_type].empty:
+                    logger.info(f"Loading {len(transformed_data[data_type])} records for {data_type} to BigQuery")
                     loader.load_to_bigquery(
                         transformed_data[data_type], 
                         f"oura_{data_type}"
                     )
-                    logger.info(f"Loaded {len(transformed_data[data_type])} records for {data_type}")
-        
+                    logger.info(f"Successfully loaded {len(transformed_data[data_type])} records for {data_type}")
+                else:
+                    logger.warning(f"No transformed data available for {data_type}")
+            else:
+                logger.warning(f"No raw data retrieved for {data_type}")
         logger.info("Transform pipeline completed successfully")
             
     except Exception as e:
-        logger.error(f"Transform pipeline failed: {e}")
+        logger.error(f"Transform pipeline failed: {e}", exc_info=True)
         raise
 
 default_args = {
@@ -213,13 +214,13 @@ dag = DAG(
 )
 
 extract_task = PythonOperator(
-    task_id='extract_data',
+    task_id='extract_data_and_load',
     python_callable=run_extract_pipeline,
     dag=dag,
 )
 
 transform_task = PythonOperator(
-    task_id='transform_and_load_data',
+    task_id='transform_and_load',
     python_callable=run_transform_pipeline,
     dag=dag,
 )
