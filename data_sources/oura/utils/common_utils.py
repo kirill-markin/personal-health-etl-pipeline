@@ -38,7 +38,7 @@ def get_raw_data_dates(raw_data_path: Path) -> Dict[str, Set[date]]:
     Get dates available in raw data files from GCS.
     
     Args:
-        raw_data_path (Path): Path to raw data directory
+        raw_data_path (Path): Path to raw data directory (e.g., 'oura-raw-data/raw/oura')
         
     Returns:
         Dict[str, Set[date]]: Dictionary with data types as keys and sets of dates as values
@@ -62,27 +62,27 @@ def get_raw_data_dates(raw_data_path: Path) -> Dict[str, Set[date]]:
         blobs = bucket.list_blobs(prefix=prefix)
         
         for blob in blobs:
-            # Extract data type and date range from blob path
-            # Expected format: raw/oura/{data_type}/{start_date}_{end_date}/data.json
+            # Extract data type and date range from folder structure
+            # Expected format: raw/oura/{data_type}/{date_range}/data.json
             path_parts = blob.name.split('/')
             if len(path_parts) >= 4 and path_parts[-1] == 'data.json':
                 data_type = path_parts[-3]
-                date_range = path_parts[-2].split('_')
+                date_range_str = path_parts[-2]
                 
-                if len(date_range) == 2 and data_type in dates:
+                if data_type in dates and '_' in date_range_str:
+                    start_str, end_str = date_range_str.split('_')
                     try:
-                        # Load and parse the JSON data to find the actual dates
-                        content = blob.download_as_string()
-                        data = json.loads(content)
+                        start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+                        end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
                         
-                        # Extract all dates from the data
-                        for record in data.get('data', []):
-                            if 'day' in record:
-                                date_obj = datetime.strptime(record['day'], '%Y-%m-%d').date()
-                                dates[data_type].add(date_obj)
-                                
-                    except (ValueError, json.JSONDecodeError) as e:
-                        logger.warning(f"Error processing data in {blob.name}: {e}")
+                        # Add all dates in the range to the set
+                        current_date = start_date
+                        while current_date <= end_date:
+                            dates[data_type].add(current_date)
+                            current_date += timedelta(days=1)
+                            
+                    except ValueError as e:
+                        logger.warning(f"Invalid date format in folder {date_range_str}: {e}")
         
         return dates
         
