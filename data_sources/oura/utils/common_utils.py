@@ -5,7 +5,7 @@ import json
 import logging
 from google.cloud import storage
 from data_sources.oura.config.constants import HISTORICAL_DAYS
-from data_sources.oura.pipelines.dataflow_pipeline import OuraPipeline
+from data_sources.oura.etl.load import OuraLoader
 
 logger = logging.getLogger(__name__)
 
@@ -32,22 +32,6 @@ def get_date_range(existing_dates: Dict[str, Set[date]]) -> Tuple[date, date]:
         logger.info(f"No existing data found, fetching last {HISTORICAL_DAYS} days")
     
     return start_date, end_date
-
-def get_existing_dates(pipeline: OuraPipeline) -> Dict[str, Set[date]]:
-    """
-    Get existing dates from BigQuery tables
-    
-    Args:
-        pipeline: OuraPipeline instance with configured loader
-        
-    Returns:
-        Dict mapping data types to sets of existing dates
-    """
-    return {
-        'activity': pipeline.loader.get_existing_dates('oura_activity'),
-        'sleep': pipeline.loader.get_existing_dates('oura_sleep'),
-        'readiness': pipeline.loader.get_existing_dates('oura_readiness')
-    }
 
 def get_raw_data_dates(raw_data_path: Path) -> Dict[str, Set[date]]:
     """

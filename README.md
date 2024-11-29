@@ -182,15 +182,7 @@ This project uses a two-tier configuration approach:
 
 2. Run the pipeline:
 
-    ```bash
-    python3 scripts/run_pipeline.py
-    ```
-
-   This will:
-   - Extract data from Oura Ring API
-   - Save raw data to GCS bucket
-   - Transform data into structured format
-   - Load data into BigQuery tables
+    [ ] TODO: Add script to run the pipeline
 
 3. If you need to reset the pipeline:
 
