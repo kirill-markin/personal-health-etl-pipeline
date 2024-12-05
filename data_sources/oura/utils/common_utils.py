@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import logging
 from google.cloud import storage
-from data_sources.oura.config.constants import HISTORICAL_DAYS
+from data_sources.oura.config.constants import HISTORICAL_DAYS, DATA_TYPES
 from data_sources.oura.etl.load import OuraLoader
 
 logger = logging.getLogger(__name__)
@@ -52,10 +52,10 @@ def get_raw_data_dates(raw_data_path: Path) -> Dict[str, Set[date]]:
         
         bucket = storage_client.bucket(bucket_name)
         
+        # Initialize dates dictionary with all data types from constants
         dates: Dict[str, Set[date]] = {
-            'activity': set(),
-            'sleep': set(),
-            'readiness': set()
+            data_type: set() 
+            for data_type in DATA_TYPES.keys()
         }
         
         # List all blobs in the bucket with the given prefix
@@ -88,11 +88,7 @@ def get_raw_data_dates(raw_data_path: Path) -> Dict[str, Set[date]]:
         
     except Exception as e:
         logger.error(f"Error reading raw data dates: {e}")
-        return {
-            'activity': set(),
-            'sleep': set(),
-            'readiness': set()
-        }
+        return {data_type: set() for data_type in DATA_TYPES.keys()}
 
 def get_dates_to_extract(raw_dates: Dict[str, set[date]]) -> Tuple[date, date]:
     """

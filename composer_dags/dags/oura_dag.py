@@ -12,59 +12,31 @@ from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecre
 from data_sources.oura.utils.common_utils import get_raw_data_dates, get_dates_to_extract, get_dates_for_transform
 from typing import Dict, Any
 from pathlib import Path
-
+from airflow.models.variable import Variable
+from data_sources.oura.config.constants import DATA_TYPES
 logger = logging.getLogger(__name__)
 
 def get_config() -> Dict[str, Dict[str, Any]]:
-    """
-    Retrieve configuration from Secret Manager and environment variables.
+    """Get configuration for Oura ETL pipeline"""
+    # Get GCP config from Airflow variables
+    gcp_config = Variable.get("oura_gcp_config", deserialize_json=True)
     
-    Returns:
-        Dict containing API and GCP configurations
+    # Get API token from environment
+    api_token = os.environ.get('OURA_API_TOKEN')
+    if not api_token:
+        raise ValueError("OURA_API_TOKEN environment variable not set")
     
-    Raises:
-        ValueError: If required environment variables are missing
-        Exception: If Secret Manager access fails
-    """
-    try:
-        project_id = os.environ.get('GCP_PROJECT_ID') or os.environ.get('AIRFLOW_VAR_PROJECT_ID')
-        if not project_id:
-            raise ValueError("Neither GCP_PROJECT_ID nor AIRFLOW_VAR_PROJECT_ID environment variable is set")
-            
-        sm_hook = GoogleCloudSecretManagerHook()
-        secret_response = sm_hook.access_secret(
-            secret_id="oura_gcp_config",
-            project_id=project_id
-        )
-        
-        gcp_config = json.loads(secret_response.payload.data.decode('UTF-8'))
-        
-        api_token = os.environ.get('OURA_API_TOKEN') or os.environ.get('AIRFLOW_VAR_OURA_API_TOKEN')
-        if not api_token:
-            raise ValueError("Neither OURA_API_TOKEN nor AIRFLOW_VAR_OURA_API_TOKEN environment variable is set")
-
-        api_config = {
-            "base_url": "https://api.ouraring.com/v2",
-            "token": api_token,
-            "endpoints": {
-                "sleep": "/usercollection/sleep",
-                "activity": "/usercollection/daily_activity",
-                "readiness": "/usercollection/daily_readiness",
-                # FIXME: add more tables
-                # "personal_info": "/usercollection/personal_info",
-                # "sessions": "/usercollection/session",
-                # "tags": "/usercollection/tag",
-                # "workouts": "/usercollection/workout",
-                # "heart_rate": "/usercollection/heartrate",
-                # "daily_spo2": "/usercollection/daily_spo2",
-                # "stress": "/usercollection/daily_stress"
-            }
+    # Build API config using DATA_TYPES from constants
+    api_config = {
+        "base_url": "https://api.ouraring.com/v2",
+        "token": api_token,
+        "endpoints": {
+            data_type: config.endpoint 
+            for data_type, config in DATA_TYPES.items()
         }
-        return {"api": api_config, "gcp": gcp_config}
-        
-    except Exception as e:
-        logger.error(f"Failed to get config: {e}")
-        raise
+    }
+    
+    return {"api": api_config, "gcp": gcp_config}
 
 def get_etl_components(config: Dict[str, Dict[str, Any]]) -> tuple[OuraExtractor, OuraTransformer, OuraLoader]:
     """
@@ -108,8 +80,11 @@ def run_extract_pipeline(**context) -> None:
     logger.info(f"Will extract {(end_date - start_date).days + 1} days of data")
     
     try:
-        # Extract data for each type independently
+        # Extract date-based endpoints
         for data_type in raw_dates.keys():
+            if data_type == 'heartrate':
+                continue  # Skip heartrate here, handle separately
+                
             logger.info(f"Extracting {data_type} data")
             # Get latest date for this type
             type_dates = raw_dates[data_type]
@@ -131,6 +106,37 @@ def run_extract_pipeline(**context) -> None:
                 logger.info(f"Saved raw data for {data_type}")
             else:
                 logger.info(f"No new data received for {data_type}")
+
+        # Extract heartrate data in chunks of 7 days
+        if 'heartrate' in extractor.config.endpoints:
+            logger.info("Extracting heartrate data")
+            current_start = start_date
+            chunk_size = timedelta(days=7)
+            
+            while current_start <= end_date:
+                chunk_end = min(current_start + chunk_size, end_date)
+                logger.info(f"Extracting heartrate chunk: {current_start} to {chunk_end}")
+                
+                start_datetime = datetime.combine(current_start, datetime.min.time())
+                end_datetime = datetime.combine(chunk_end, datetime.max.time())
+                
+                try:
+                    raw_data = extractor._make_datetime_request(
+                        extractor.config.endpoints['heartrate'],
+                        start_datetime,
+                        end_datetime
+                    )
+                    
+                    if raw_data.get('data'):
+                        loader.save_to_gcs(raw_data, 'heartrate', current_start, chunk_end)
+                        logger.info(f"Saved raw heartrate data for {current_start} to {chunk_end}")
+                    else:
+                        logger.info(f"No heartrate data for period {current_start} to {chunk_end}")
+                        
+                except Exception as e:
+                    logger.error(f"Error extracting heartrate data for period {current_start} to {chunk_end}: {e}")
+                    
+                current_start = chunk_end + timedelta(days=1)
                 
         logger.info("Extract pipeline completed successfully")
         
