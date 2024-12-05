@@ -53,7 +53,7 @@ def get_etl_components(config: Dict[str, Dict[str, Any]]) -> tuple[OuraExtractor
     )
 
 def run_extract_pipeline(**context) -> None:
-    """Extract data from Oura API"""
+    """Extract data from Oura API starting from the latest existing date"""
     logger.info("Starting extract pipeline")
     config = get_config()
     extractor, _, loader = get_etl_components(config)
@@ -61,23 +61,9 @@ def run_extract_pipeline(**context) -> None:
     # Get existing dates from raw data
     raw_data_path = f"{config['gcp']['bucket_name']}/raw/oura"
     raw_dates = get_raw_data_dates(Path(raw_data_path))
-    logger.info(f"Raw dates: {raw_dates}")
     
-    # Log existing data stats
-    for data_type, dates in raw_dates.items():
-        logger.info(f"Found {len(dates)} existing {data_type} records")
-        if dates:
-            logger.info(f"Existing {data_type} date range: {min(dates)} to {max(dates)}")
-    
-    # Calculate date range
-    start_date, end_date = get_dates_to_extract(raw_dates)
-    
-    if start_date > end_date:
-        logger.info(f"No new data to extract: start_date ({start_date}) > end_date ({end_date})")
-        return
-            
-    logger.info(f"Starting extraction for date range: {start_date} to {end_date}")
-    logger.info(f"Will extract {(end_date - start_date).days + 1} days of data")
+    # Get end date (today)
+    end_date = datetime.now().date()
     
     try:
         # Extract date-based endpoints
@@ -86,23 +72,20 @@ def run_extract_pipeline(**context) -> None:
                 continue  # Skip heartrate here, handle separately
                 
             logger.info(f"Extracting {data_type} data")
-            # Get latest date for this type
+            # Start from day after the latest date, or 30 days ago if no data exists
             type_dates = raw_dates[data_type]
-            type_start_date = max(type_dates) + timedelta(days=1) if type_dates else start_date
+            start_date = max(type_dates) + timedelta(days=1) if type_dates else end_date - timedelta(days=365)
             
-            if type_start_date > end_date:
-                logger.info(f"No new {data_type} data to extract: start_date ({type_start_date}) > end_date ({end_date})")
+            if start_date > end_date:
+                logger.info(f"No new {data_type} data to extract: already up to date")
                 continue
-                
-            logger.info(f"Extracting {data_type} from {type_start_date} to {end_date}")
             
-            # Extract data for this type
+            logger.info(f"Extracting {data_type} data from {start_date} to {end_date}")
             endpoint = extractor.config.endpoints[data_type]
-            raw_data = extractor._make_request(endpoint, type_start_date, end_date)
+            raw_data = extractor._make_request(endpoint, start_date, end_date)
             
-            # Save raw data if not empty
             if raw_data.get('data'):
-                loader.save_to_gcs(raw_data, data_type, type_start_date, end_date)
+                loader.save_to_gcs(raw_data, data_type, start_date, end_date)
                 logger.info(f"Saved raw data for {data_type}")
             else:
                 logger.info(f"No new data received for {data_type}")
@@ -110,6 +93,9 @@ def run_extract_pipeline(**context) -> None:
         # Extract heartrate data in chunks of 7 days
         if 'heartrate' in extractor.config.endpoints:
             logger.info("Extracting heartrate data")
+            hr_dates = raw_dates.get('heartrate', set())
+            start_date = max(hr_dates) + timedelta(days=1) if hr_dates else end_date - timedelta(days=365)
+            
             current_start = start_date
             chunk_size = timedelta(days=7)
             
