@@ -101,14 +101,15 @@ def get_dates_to_extract(raw_dates: Dict[str, set[date]]) -> Tuple[date, date]:
         Tuple of start_date and end_date for extraction
     """
     today = date.today()
-    yesterday = today - timedelta(days=1)  # We only need data up to yesterday
+    yesterday = today - timedelta(days=1)  # We only want data up to yesterday
     
     # Find the earliest date we need to fetch (latest date + 1 for each type)
     start_dates = []
     for dates in raw_dates.values():
         if dates:
             latest_date = max(dates)
-            start_dates.append(latest_date + timedelta(days=1))
+            if latest_date < yesterday:  # Only add if latest date is before yesterday
+                start_dates.append(latest_date + timedelta(days=1))
         else:
             start_dates.append(yesterday - timedelta(days=90))
     
@@ -117,6 +118,10 @@ def get_dates_to_extract(raw_dates: Dict[str, set[date]]) -> Tuple[date, date]:
     
     # Only extract up to yesterday
     end_date = yesterday
+    
+    # If start date would be after end date, no new data needed
+    if start_date > end_date:
+        return end_date, end_date  # Return same date to indicate no data needed
     
     return start_date, end_date
 
