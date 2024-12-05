@@ -14,6 +14,7 @@ from typing import Dict, Any
 from pathlib import Path
 from airflow.models.variable import Variable
 from data_sources.oura.config.constants import DATA_TYPES
+
 logger = logging.getLogger(__name__)
 
 def get_config() -> Dict[str, Dict[str, Any]]:
@@ -62,8 +63,8 @@ def run_extract_pipeline(**context) -> None:
     raw_data_path = f"{config['gcp']['bucket_name']}/raw/oura"
     raw_dates = get_raw_data_dates(Path(raw_data_path))
     
-    # Get end date (today)
-    end_date = datetime.now().date()
+    # Get end date (yesterday)
+    end_date = datetime.now().date() - timedelta(days=1)
     
     try:
         # Extract date-based endpoints
