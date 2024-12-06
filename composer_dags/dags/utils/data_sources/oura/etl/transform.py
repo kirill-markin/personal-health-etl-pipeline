@@ -2,9 +2,8 @@ from typing import Dict, Any, Optional
 import pandas as pd
 from datetime import date, timedelta
 import logging
-import sys
-import os
 from pathlib import Path
+import json
 
 from ..utils.common_utils import get_raw_data_dates, get_config
 from ..config.constants import DATA_TYPES, BQ_TABLE_PREFIX, DataCategory
@@ -20,8 +19,7 @@ class OuraTransformer:
         try:
             return pd.to_datetime(date_str).date()
         except Exception as e:
-            logger.warning(f"Error converting date {date_str}: {e}")
-            return None
+            raise ValueError(f"Error converting date {date_str}: {e}")
 
     def transform_data(self, raw_data: Dict[str, Dict[str, Any]]) -> Dict[str, pd.DataFrame]:
         """
@@ -126,75 +124,57 @@ def run_transform_pipeline(**context) -> None:
         loader = OuraLoader(oura_config)
         
         
-        # Get raw data path
+        # Get raw data path and dates
         raw_data_path = f"{config['gcp']['bucket_name']}/raw/oura"
         raw_dates = get_raw_data_dates(Path(raw_data_path))
-        
-        # Calculate end date (yesterday)
         end_date = date.today() - timedelta(days=1)
-        
-        # Get latest dates from BigQuery for daily and detailed data types
-        bq_dates = {}
-        for data_type, config in DATA_TYPES.items():
-            if config.category in [DataCategory.DAILY, DataCategory.DETAILED]:
-                table_name = f"{BQ_TABLE_PREFIX}{data_type}"
-                bq_dates[data_type] = loader.get_existing_dates(table_name)
-                
-                if bq_dates[data_type]:
-                    logger.info(
-                        f"Found {len(bq_dates[data_type])} existing {data_type} records "
-                        f"in BigQuery: {min(bq_dates[data_type])} to {max(bq_dates[data_type])}"
-                    )
-        
-        # Process each data type that needs updating
+
+        # Get latest date from the combined table
+        combined_table_name = f"{BQ_TABLE_PREFIX}day"
+        combined_dates = loader.get_existing_dates(combined_table_name)
+        latest_combined_date = max(combined_dates or {date.min})
+
+        # Get all new dates across all data types
+        all_new_dates = set()
+        for data_type, dates in raw_dates.items():
+            if DATA_TYPES[data_type].category in [DataCategory.DAILY, DataCategory.DETAILED]:
+                all_new_dates.update({d for d in dates if latest_combined_date < d <= end_date})
+
+        if not all_new_dates:
+            logger.info("No new data to process")
+            return
+
+        start_date = min(all_new_dates)
+        logger.info(f"Processing all data types from {start_date} to {end_date}")
+
+        # Collect raw data for all types in the date range
         raw_data_to_transform: Dict[str, Dict[str, Any]] = {}
-        
         for data_type, config in DATA_TYPES.items():
-            if config.category == DataCategory.SPECIAL:
-                logger.info(f"Skipping special data type: {data_type}")
+            if config.category not in [DataCategory.DAILY, DataCategory.DETAILED]:
                 continue
-                
-            if not raw_dates.get(data_type):
-                logger.info(f"No raw data found for {data_type}")
-                raise ValueError(f"No raw data found for {data_type}")
-                
-            # Get latest date for this specific data type
-            latest_date = max(bq_dates.get(data_type, set()) or {date.min})
-            
-            # Get dates after the latest BigQuery date
-            new_dates = {d for d in raw_dates[data_type] if latest_date < d <= end_date}
-            logger.info(f"Found {len(new_dates)} new dates for {data_type}")
-            
-            if not new_dates:
-                logger.info(f"No new {data_type} data to transform")
-                continue
-            
-            start_date = min(new_dates)
-            logger.info(f"Processing {data_type} data from {start_date} to {end_date}")
-            
-            # Get raw data for the entire period
+
             raw_data = loader.get_raw_data(data_type, start_date, end_date + timedelta(days=1))
             if raw_data and raw_data.get('data'):
                 logger.info(f"Got {len(raw_data['data'])} raw records for {data_type}")
                 raw_data_to_transform[data_type] = raw_data
-            else:
-                logger.warning(f"No raw data retrieved for {data_type}")
-        
+
         if raw_data_to_transform:
-            # Transform all collected data
+            # Transform and combine all data
             transformed_data = transformer.transform_data(raw_data_to_transform)
             
-            # Load transformed data to BigQuery
-            for data_type, df in transformed_data.items():
-                if df.empty:
-                    logger.warning(f"No transformed data available for {data_type}")
-                    continue
-                    
-                table_name = f"{BQ_TABLE_PREFIX}{data_type}"
-                logger.info(f"Loading {len(df)} records for {data_type} to {table_name}")
-                loader.load_to_bigquery(df, table_name)
-                logger.info(f"Successfully loaded {len(df)} records for {data_type}")
-        
+            # Log transformed data in a pretty format
+            logger.info(f"Transformed data: \n{json.dumps(transformed_data, indent=2)}")
+
+            # Load only the combined daily data
+            if 'combined_daily' in transformed_data:
+                combined_df = transformed_data['combined_daily']
+                if not combined_df.empty:
+                    logger.info(f"Loading {len(combined_df)} combined records to {combined_table_name}")
+                    loader.load_to_bigquery(combined_df, combined_table_name)
+                    logger.info("Successfully loaded combined data")
+            else:
+                logger.warning("No combined data available")
+
         logger.info("Transform pipeline completed successfully")
             
     except Exception as e:
