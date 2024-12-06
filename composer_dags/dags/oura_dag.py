@@ -89,7 +89,9 @@ def run_extract_pipeline(**context) -> None:
                 loader.save_to_gcs(raw_data, data_type, start_date, end_date)
                 logger.info(f"Saved raw data for {data_type}")
             else:
-                logger.info(f"No new data received for {data_type}")
+                # Create empty file to mark that no new data was received
+                loader.save_to_gcs({}, data_type, start_date, end_date)
+                logger.info(f"No new data received for {data_type}, empty file created")
 
         # Extract heartrate data in chunks of 7 days
         if 'heartrate' in extractor.config.endpoints:
