@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
     "google-cloud-storage==2.14.0",
     "google-cloud-bigquery==3.14.1",
+    "google-cloud-bigquery-storage==2.24.0",
     "apache-beam[gcp]==2.54.0",
     "pandas==2.2.0",
     "requests==2.31.0",
