@@ -184,13 +184,11 @@ This project uses a two-tier configuration approach:
 
     [ ] TODO: Add script to run the pipeline
 
-3. If you need to reset the pipeline: #FIXME
+3. If you need to reset the pipeline:
 
     ```bash
     # Drop existing BigQuery tables
-    bq rm -f -t stefans-body-etl:oura_data.oura_sleep
-    bq rm -f -t stefans-body-etl:oura_data.oura_activity
-    bq rm -f -t stefans-body-etl:oura_data.oura_readiness
+    ./scripts/drop_tables.sh
     ```
 
 ## Monitoring
