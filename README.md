@@ -184,7 +184,7 @@ This project uses a two-tier configuration approach:
 
     [ ] TODO: Add script to run the pipeline
 
-3. If you need to reset the pipeline:
+3. If you need to reset the pipeline: #FIXME
 
     ```bash
     # Drop existing BigQuery tables

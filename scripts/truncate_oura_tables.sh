@@ -2,9 +2,7 @@
 
 # List of tables to truncate
 TABLES=(
-    "oura_activity"
-    "oura_readiness"
-    "oura_sleep"
+    "oura_day"
 )
 
 PROJECT="stefans-body-etl"
