@@ -96,6 +96,9 @@ class OuraLoader:
             df: DataFrame to load
             table_name: Target table name
         """
+        if df.empty:
+            raise ValueError(f"Empty DataFrame provided for {table_name}, skipping load")
+        
         dataset_ref = self.bq_client.dataset(self.config.dataset_id)
         table_ref = dataset_ref.table(table_name)
         
@@ -139,20 +142,19 @@ class OuraLoader:
     def get_existing_dates(self, table_name: str) -> set:
         """Get set of dates that already exist in BigQuery table"""
         query = f"""
-        SELECT DISTINCT date
+        SELECT DISTINCT day
         FROM `{self.config.project_id}.{self.config.dataset_id}.{table_name}`
         """
         
         try:
             df = self.bq_client.query(query).to_dataframe()
             if not df.empty:
-                # Convert the date column to datetime if it's not already
-                df['date'] = pd.to_datetime(df['date'])
-                return set(df['date'].dt.date)
+                # Convert the day column to datetime if it's not already
+                df['day'] = pd.to_datetime(df['day'])
+                return set(df['day'].dt.date)
             return set()
         except Exception as e:
-            logger.warning(f"Error getting existing dates: {e}")
-            return set()
+            raise ValueError(f"Error getting existing dates: {e}")
 
     def get_raw_data(self, data_type: str, start_date: date, end_date: date) -> Optional[Dict[str, Any]]:
         """
@@ -235,8 +237,7 @@ class OuraLoader:
             return None
             
         except Exception as e:
-            logger.error(f"Error reading raw data: {e}")
-            return None
+            raise ValueError(f"Error reading raw data: {e}")
 
     def check_existing_data(self, data_type: str, date: str) -> bool:
         """
@@ -261,5 +262,4 @@ class OuraLoader:
             row = next(results)
             return row.count > 0
         except Exception as e:
-            logger.error(f"Error checking existing data: {e}")
-            return False
+            raise ValueError(f"Error checking existing data: {e}")
