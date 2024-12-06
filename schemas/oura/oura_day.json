@@ -3,5 +3,635 @@
     "name": "day",
     "type": "DATE",
     "mode": "REQUIRED"
+  },
+  {
+    "name": "daily_activity__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__class_5_min",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__score",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__active_calories",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__average_met_minutes",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__equivalent_walking_distance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__steps",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__timestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__high_activity_met_minutes",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__high_activity_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__inactivity_alerts",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__low_activity_met_minutes",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__low_activity_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__medium_activity_met_minutes",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__medium_activity_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__meters_to_target",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__non_wear_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__resting_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__sedentary_met_minutes",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__sedentary_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__target_calories",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__target_meters",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__total_calories",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__score",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__temperature_deviation",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__temperature_trend_deviation",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_stress__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_stress__stress_high",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_stress__recovery_high",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_stress__day_summary",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_resilience__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_resilience__level",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_cardiovascular_age__vascular_age",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__activity",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__calories",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__distance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__end_datetime",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__intensity",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__label",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__source",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "workout__start_datetime",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__average_breath",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__average_heart_rate",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__average_hrv",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__awake_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__bedtime_end",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__bedtime_start",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__deep_sleep_duration",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__efficiency",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__latency",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__light_sleep_duration",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__low_battery_alert",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__lowest_heart_rate",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__movement_30_sec",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__period",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness_score_delta",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__rem_sleep_duration",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__restless_periods",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__sleep_phase_5_min",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__sleep_score_delta",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__sleep_algorithm_version",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__time_in_bed",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__total_sleep_duration",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__type",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__optimal_bedtime",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__score",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__timestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_spo2__id",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_spo2__spo2_percentage",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_spo2__breathing_disturbance_index",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__timestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__contributors__meet_daily_targets",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__contributors__move_every_hour",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__contributors__recovery_time",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__contributors__stay_active",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__contributors__training_frequency",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__contributors__training_volume",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__met__interval",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__met__items",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_activity__met__timestamp",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__activity_balance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__body_temperature",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__hrv_balance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__previous_day_activity",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__previous_night",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__recovery_index",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__resting_heart_rate",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_readiness__contributors__sleep_balance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_resilience__contributors__daytime_recovery",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_resilience__contributors__sleep_recovery",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_resilience__contributors__stress",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__deep_sleep",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__efficiency",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__latency",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__rem_sleep",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__restfulness",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__timing",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_sleep__contributors__total_sleep",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "daily_spo2__spo2_percentage__average",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__heart_rate__interval",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__heart_rate__items",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__heart_rate__timestamp",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__hrv__interval",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__hrv__items",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__hrv__timestamp",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__activity_balance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__body_temperature",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__hrv_balance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__previous_day_activity",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__previous_night",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__recovery_index",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__resting_heart_rate",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__contributors__sleep_balance",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__score",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__temperature_deviation",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep__readiness__temperature_trend_deviation",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__optimal_bedtime__day_tz",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__optimal_bedtime__end_offset",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__optimal_bedtime__start_offset",
+    "type": "FLOAT64",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__recommendation",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "sleep_time__status",
+    "type": "STRING",
+    "mode": "NULLABLE"
   }
 ]

@@ -91,10 +91,6 @@ class OuraLoader:
     def load_to_bigquery(self, df: pd.DataFrame, table_name: str) -> None:
         """
         Load transformed data to BigQuery using WRITE_APPEND disposition
-        
-        Args:
-            df: DataFrame to load
-            table_name: Target table name
         """
         if df.empty:
             raise ValueError(f"Empty DataFrame provided for {table_name}, skipping load")
@@ -104,7 +100,52 @@ class OuraLoader:
         
         # Get schema for this specific table
         schema = self._get_table_schema(table_name)
-        logger.info(f"Using schema with {len(schema)} fields for {table_name}")
+        
+        # Find fields present in schema but missing in DataFrame
+        schema_fields = {field.name: field.field_type for field in schema}
+        missing_fields = {
+            name: field_type 
+            for name, field_type in schema_fields.items() 
+            if name not in df.columns
+        }
+        
+        # Find fields present in DataFrame but not in schema
+        extra_fields = {
+            col: str(df[col].dtype) 
+            for col in df.columns 
+            if col not in schema_fields
+        }
+        
+        # Log schema differences
+        if missing_fields:
+            logger.warning(
+                f"Fields in schema but missing from DataFrame:\n"
+                f"{'Field':<30} {'Schema Type':<15}\n" +
+                "\n".join(f"{k:<30} {v:<15}" for k, v in sorted(missing_fields.items()))
+            )
+            raise ValueError(f"Missing fields in DataFrame: {sorted(missing_fields)}")
+        
+        if extra_fields:
+            logger.warning(
+                f"Fields in DataFrame but missing from schema:\n"
+                f"{'Field':<30} {'DataFrame Type':<15}\n" +
+                "\n".join(f"{k:<30} {v:<15}" for k, v in sorted(extra_fields.items()))
+            )
+            raise ValueError(f"Extra fields in DataFrame: {sorted(extra_fields)}")
+        # Filter schema to only include fields present in the DataFrame
+        filtered_schema = [
+            field for field in schema 
+            if field.name in df.columns or field.mode == 'NULLABLE'
+        ]
+        
+        logger.info(
+            f"Schema comparison for {table_name}:\n"
+            f"Original schema fields: {len(schema)}\n"
+            f"DataFrame columns: {len(df.columns)}\n"
+            f"Filtered schema fields: {len(filtered_schema)}\n"
+            f"Missing fields: {len(missing_fields)}\n"
+            f"Extra fields: {len(extra_fields)}"
+        )
         
         # Log DataFrame info
         logger.info(f"DataFrame info for {table_name}:")
@@ -112,10 +153,26 @@ class OuraLoader:
         logger.info(f"Data types: {df.dtypes.to_dict()}")
         logger.info(f"Row count: {len(df)}")
         
+        # Verify all object columns are properly stringified
+        object_columns = df.select_dtypes(include=['object']).columns
+        for col in object_columns:
+            sample_value = df[col].iloc[0] if not df[col].empty else None
+            if isinstance(sample_value, (list, dict)):
+                logger.error(f"Column {col} contains non-stringified arrays or dicts")
+                df[col] = df[col].apply(
+                    lambda x: json.dumps(x) if pd.notnull(x) else None
+                )
+                logger.info(f"Converted column {col} to JSON strings")
+
+        # Log column types for debugging
+        logger.info("DataFrame column types before loading:")
+        for col, dtype in df.dtypes.items():
+            logger.info(f"Column: {col}, Type: {dtype}")
+        
         # Configure job to append data
         job_config = bigquery.LoadJobConfig(
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            schema=schema if schema else None
+            schema=filtered_schema if filtered_schema else None
         )
 
         try:
@@ -129,7 +186,6 @@ class OuraLoader:
             job.result()
             logger.info(f"BigQuery job {job.job_id} completed with status: {job.state}")
             
-            # Get error details if any
             if job.errors:
                 logger.error(f"Job errors: {job.errors}")
             else:
