@@ -64,7 +64,6 @@ class OuraLoader:
     
     def _get_table_schema(self, table_name: str) -> List[bigquery.SchemaField]:
         """Get the appropriate schema based on table name"""
-        # FIXME
         # In Composer environment, schemas are in /home/airflow/gcs/data/schemas/
         composer_schema_path = Path("/home/airflow/gcs/data/schemas/oura") / f"{table_name}.json"
         local_schema_path = Path(__file__).parents[3] / "schemas" / "oura" / f"{table_name}.json"

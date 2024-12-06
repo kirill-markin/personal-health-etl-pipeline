@@ -8,7 +8,6 @@ resource "google_storage_bucket_object" "dags" {
   bucket       = var.composer_bucket
 }
 
-# FIXME
 # Add config files to a separate configs folder in Composer
 resource "google_storage_bucket_object" "airflow_variables" {
   name         = "data/airflow_variables.json"
@@ -25,7 +24,6 @@ resource "google_storage_bucket_object" "airflow_variables" {
   bucket       = var.composer_bucket
 }
 
-# FIXME
 # Add schema files to Composer
 resource "google_storage_bucket_object" "schemas" {
   for_each = fileset("../../../schemas", "**/*.json")
