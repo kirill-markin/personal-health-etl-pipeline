@@ -1,0 +1,7 @@
+[
+  {
+    "name": "day",
+    "type": "DATE",
+    "mode": "REQUIRED"
+  }
+]

@@ -29,33 +29,13 @@ resource "google_bigquery_dataset" "dataset" {
   }
 }
 
-# Tables for Oura data
-resource "google_bigquery_table" "oura_sleep" {
+# Tables for Oura data grouped by day
+resource "google_bigquery_table" "oura_day" {
   dataset_id = google_bigquery_dataset.dataset.dataset_id
   project    = var.project_id
-  table_id   = "oura_sleep"
+  table_id   = "oura_day"
 
   deletion_protection = false  # Set to true in production
 
-  schema = file("../../../schemas/oura/oura_sleep.json")
-}
-
-resource "google_bigquery_table" "oura_activity" {
-  dataset_id = google_bigquery_dataset.dataset.dataset_id
-  project    = var.project_id
-  table_id   = "oura_activity"
-
-  deletion_protection = false  # Set to true in production
-
-  schema = file("../../../schemas/oura/oura_activity.json")
-}
-
-resource "google_bigquery_table" "oura_readiness" {
-  dataset_id = google_bigquery_dataset.dataset.dataset_id
-  project    = var.project_id
-  table_id   = "oura_readiness"
-
-  deletion_protection = false  # Set to true in production
-
-  schema = file("../../../schemas/oura/oura_readiness.json")
+  schema = file("../../../schemas/oura/oura_day.json")
 }

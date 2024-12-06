@@ -1,24 +1,20 @@
 from google.cloud import storage, bigquery
 from google.api_core import exceptions
 import pandas as pd
-from typing import Dict, List, Union, Any, Optional
+from typing import Dict, List, Any, Optional
 import logging
 import json
 from datetime import datetime, date
 import yaml
-from data_sources.oura.config.config import OuraConfig
 from pathlib import Path
+
+from ..config.config import OuraConfig
 
 logger = logging.getLogger(__name__)
 
 class OuraLoader:
-    def __init__(self, config: Union[str, Dict[str, Any], OuraConfig]):
-        if isinstance(config, OuraConfig):
-            self.config = config
-        elif isinstance(config, dict):
-            self.config = OuraConfig.from_dict(config)
-        else:
-            self.config = OuraConfig.from_yaml(Path(config))
+    def __init__(self, oura_config: OuraConfig):
+        self.config = oura_config
         self.storage_client = storage.Client()
         self.bq_client = bigquery.Client()
         self._verify_bucket_exists()
@@ -68,6 +64,7 @@ class OuraLoader:
     
     def _get_table_schema(self, table_name: str) -> List[bigquery.SchemaField]:
         """Get the appropriate schema based on table name"""
+        # FIXME
         # In Composer environment, schemas are in /home/airflow/gcs/data/schemas/
         composer_schema_path = Path("/home/airflow/gcs/data/schemas/oura") / f"{table_name}.json"
         local_schema_path = Path(__file__).parents[3] / "schemas" / "oura" / f"{table_name}.json"
