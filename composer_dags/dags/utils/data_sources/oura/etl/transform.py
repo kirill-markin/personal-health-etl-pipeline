@@ -49,7 +49,7 @@ class OuraTransformer:
                     records = []
                     
                     for record in data.get('data', []):
-                        if not all(key in record for key in ['id', 'day']):
+                        if not all(key in record for key in ['day']):
                             logger.warning(f"Missing required fields in record: {record}")
                             continue
                             
@@ -60,14 +60,13 @@ class OuraTransformer:
                         
                         # Create base record with common fields
                         transformed_record = {
-                            'id': record.get('id'),
                             'day': day,
                             'data_type': data_type
                         }
                         
                         # Add all other fields with data_type prefix
                         for key, value in record.items():
-                            if key not in ['id', 'day']:
+                            if key not in ['day']:
                                 field_name = f"{data_type}_{key}"
                                 transformed_record[field_name] = value
                         
@@ -162,8 +161,15 @@ def run_transform_pipeline(**context) -> None:
             # Transform and combine all data
             transformed_data = transformer.transform_data(raw_data_to_transform)
             
-            # Log transformed data in a pretty format
-            logger.info(f"Transformed data: \n{json.dumps(transformed_data, indent=2)}")
+            # Log data structure and sample in a pretty format
+            data_info = {
+                data_type: {
+                    'shape': df.shape,
+                    'columns': df.columns.tolist(),
+                    'sample': df.head(2).to_dict('records') if not df.empty else []
+                } for data_type, df in transformed_data.items()
+            }
+            logger.info(f"Transformed data structure: \n{json.dumps(data_info, indent=2)}")
 
             # Load only the combined daily data
             if 'combined_daily' in transformed_data:
