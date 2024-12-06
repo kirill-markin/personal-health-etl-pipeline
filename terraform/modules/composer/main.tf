@@ -9,6 +9,7 @@ resource "google_composer_environment" "composer_env" {
       
       pypi_packages = {
         "apache-airflow-providers-google" = ">=10.3.0"
+        "google-cloud-bigquery-storage" = ">=2.24.0"
       }
       
       env_variables = {

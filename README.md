@@ -188,9 +188,7 @@ This project uses a two-tier configuration approach:
 
     ```bash
     # Drop existing BigQuery tables
-    bq rm -f -t stefans-body-etl:oura_data.oura_sleep
-    bq rm -f -t stefans-body-etl:oura_data.oura_activity
-    bq rm -f -t stefans-body-etl:oura_data.oura_readiness
+    ./scripts/drop_tables.sh
     ```
 
 ## Monitoring
