@@ -21,7 +21,6 @@ DATA_TYPES: Final[Dict[str, DataTypeConfig]] = {
     # Daily summaries
     'daily_activity': DataTypeConfig(DataCategory.DAILY, '/usercollection/daily_activity'),
     'daily_sleep': DataTypeConfig(DataCategory.DAILY, '/usercollection/daily_sleep'),
-    'daily_spo2': DataTypeConfig(DataCategory.DAILY, '/usercollection/daily_spo2'),
     'daily_readiness': DataTypeConfig(DataCategory.DAILY, '/usercollection/daily_readiness'),
     'daily_stress': DataTypeConfig(DataCategory.DAILY, '/usercollection/daily_stress'),
     'daily_resilience': DataTypeConfig(DataCategory.DAILY, '/usercollection/daily_resilience'),
@@ -41,6 +40,11 @@ DATA_TYPES: Final[Dict[str, DataTypeConfig]] = {
         DataCategory.SPECIAL, 
         '/usercollection/heartrate',
         special_params={'uses_datetime': True}
+    ),
+    'daily_spo2': DataTypeConfig(
+        DataCategory.SPECIAL, 
+        '/usercollection/daily_spo2',
+        special_params={'id_day': True}
     ),
 }
 

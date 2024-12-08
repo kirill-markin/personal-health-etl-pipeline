@@ -93,7 +93,8 @@ class OuraLoader:
         Load transformed data to BigQuery using WRITE_APPEND disposition
         """
         if df.empty:
-            raise ValueError(f"Empty DataFrame provided for {table_name}, skipping load")
+            logger.warning(f"Empty DataFrame provided for {table_name}, skipping load")
+            return
         
         dataset_ref = self.bq_client.dataset(self.config.dataset_id)
         table_ref = dataset_ref.table(table_name)
@@ -116,14 +117,18 @@ class OuraLoader:
             if col not in schema_fields
         }
         
-        # Log schema differences
+        # Log schema differences and df info
+        logger.info(f"DataFrame has {len(df)} rows")
+        logger.info(f"DataFrame columns: {df.columns.tolist()}")
+        logger.info(f"DataFrame data types: {df.dtypes.to_dict()}")
+    
+        # Log schema differences and df not empty
         if missing_fields:
             logger.warning(
                 f"Fields in schema but missing from DataFrame:\n"
                 f"{'Field':<30} {'Schema Type':<15}\n" +
                 "\n".join(f"{k:<30} {v:<15}" for k, v in sorted(missing_fields.items()))
             )
-            raise ValueError(f"Missing fields in DataFrame: {sorted(missing_fields)}")
         
         if extra_fields:
             logger.warning(
@@ -132,6 +137,7 @@ class OuraLoader:
                 "\n".join(f"{k:<30} {v:<15}" for k, v in sorted(extra_fields.items()))
             )
             raise ValueError(f"Extra fields in DataFrame: {sorted(extra_fields)}")
+        
         # Filter schema to only include fields present in the DataFrame
         filtered_schema = [
             field for field in schema 
@@ -165,14 +171,19 @@ class OuraLoader:
                 logger.info(f"Converted column {col} to JSON strings")
 
         # Log column types for debugging
-        logger.info("DataFrame column types before loading:")
+        logger.debug("DataFrame column types before loading:")
         for col, dtype in df.dtypes.items():
-            logger.info(f"Column: {col}, Type: {dtype}")
+            logger.debug(f"Column: {col}, Type: {dtype}")
+
+        # Add missing columns to DataFrame with NULL values
+        for field_name in missing_fields:
+            df[field_name] = None
+            logger.info(f"Added missing column '{field_name}' with NULL values")
         
         # Configure job to append data
         job_config = bigquery.LoadJobConfig(
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            schema=filtered_schema if filtered_schema else None
+            schema=schema
         )
 
         try:
@@ -263,21 +274,37 @@ class OuraLoader:
                 return None
                 
             # Process relevant blobs
-            all_matching_records = []
+            records_by_day: Dict[str, Dict[str, Any]] = {}  # Dictionary to store records by day with blob info
             for blob in relevant_blobs:
                 try:
                     content = blob.download_as_string()
                     data = json.loads(content)
+
+                    # FIXME: move logic of error if day overlap from get_raw_data to run_transform_pipeline only for DAILY data types
                     
-                    matching_records = [
-                        record for record in data.get('data', [])
-                        if 'day' in record 
-                        and start_date <= datetime.strptime(record['day'], '%Y-%m-%d').date() < end_date
-                    ]
-                    all_matching_records.extend(matching_records)
+                    for record in data.get('data', []):
+                        if 'day' in record:
+                            record_date = datetime.strptime(record['day'], '%Y-%m-%d').date()
+                            if start_date <= record_date < end_date:
+                                if record['day'] in records_by_day:
+                                    # We found an overlap - raise detailed error
+                                    existing_record = records_by_day[record['day']]
+                                    raise ValueError(
+                                        f"Found overlapping data for date {record['day']}:\n"
+                                        f"First record from blob: {existing_record['blob_path']}\n"
+                                        f"Duplicate record from blob: {blob.name}\n"
+                                        f"First record data: {existing_record['record']}\n"
+                                        f"Duplicate record data: {record}"
+                                    )
+                                records_by_day[record['day']] = {
+                                    'record': record,
+                                    'blob_path': blob.name
+                                }
                     
                 except (json.JSONDecodeError, ValueError) as e:
-                    raise ValueError(f"Error parsing data from blob {blob.name}: {e}")
+                    raise ValueError(f"Error processing blob {blob.name}: {e}")
+            
+            all_matching_records = [info['record'] for info in records_by_day.values()]
             
             if all_matching_records:
                 return {

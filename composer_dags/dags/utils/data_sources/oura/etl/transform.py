@@ -61,7 +61,7 @@ class OuraTransformer:
                 config = DATA_TYPES[data_type]
                 logger.info(f"Processing {data_type} data (category: {config.category})")
                 
-                if config.category in [DataCategory.DAILY, DataCategory.DETAILED]:
+                if config.category in [DataCategory.DAILY]:
                     records = []
                     
                     for record in data.get('data', []):
@@ -120,6 +120,11 @@ class OuraTransformer:
                 elif config.category == DataCategory.SPECIAL:
                     logger.info(f"Special data type {data_type} will be processed separately")
                     # TODO: Implement special data processing
+                    # transformed_data[data_type] = pd.DataFrame()
+
+                elif config.category == DataCategory.DETAILED:
+                    logger.info(f"Detailed data type {data_type} will be processed separately")
+                    # TODO: Implement detailed data processing
                     # transformed_data[data_type] = pd.DataFrame()
             
             # Second pass: Join all daily and detailed data
@@ -194,8 +199,10 @@ def run_transform_pipeline(**context) -> None:
         # Collect raw data for all types in the date range
         raw_data_to_transform: Dict[str, Dict[str, Any]] = {}
         for data_type, config in DATA_TYPES.items():
-            if config.category not in [DataCategory.DAILY, DataCategory.DETAILED]:
+            if config.category not in [DataCategory.DAILY]:
                 continue
+
+            # FIXME: move logic of error if day overlap from get_raw_data to this place
 
             raw_data = loader.get_raw_data(data_type, start_date, end_date + timedelta(days=1))
             if raw_data and raw_data.get('data'):
