@@ -188,7 +188,7 @@ This project uses a two-tier configuration approach:
 
     ```bash
     # Drop existing BigQuery tables
-    ./scripts/drop_tables.sh
+    ./scripts/truncate_oura_tables.sh
     ```
 
 ## Monitoring
