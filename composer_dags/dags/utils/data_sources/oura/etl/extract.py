@@ -29,10 +29,12 @@ class OuraExtractor:
         
         headers = {"Authorization": f"Bearer {self.config.api_token}"}
         url = f"{self.config.api_base_url}{endpoint}"
+
+        logger.info(f"Making request for {endpoint} from {start_date} to {end_date}")
         
         params = {
             "start_date": start_date.isoformat(),
-            "end_date": end_date.isoformat()
+            "end_date": (end_date + timedelta(days=1)).isoformat()
         }
         
         try:
@@ -60,6 +62,8 @@ class OuraExtractor:
         """
         headers = {"Authorization": f"Bearer {self.config.api_token}"}
         url = f"{self.config.api_base_url}{endpoint}"
+
+        logger.info(f"Making datetime request for {endpoint} from {start_datetime} to {end_datetime}")
         
         # Format datetime strings according to Oura API requirements (RFC 3339 format)
         params = {
@@ -78,9 +82,11 @@ class OuraExtractor:
     def extract_data_type(self, data_type: str, start_date: date, end_date: date, 
                          chunk_size: Optional[timedelta] = None) -> Dict[str, Any]:
         """Extract data for a specific data type with optional chunking"""
+        result: Dict[str, Any] = {}
+
         if start_date > end_date:
             logger.info(f"No new {data_type} data to extract: already up to date")
-            return {"data": []}
+            result = {"data": []}
 
         config = DATA_TYPES.get(data_type)
         if not config:
@@ -88,11 +94,12 @@ class OuraExtractor:
         
         if data_type not in self.config.endpoints:
             logger.warning(f"Endpoint not configured for {data_type}, skipping")
-            return {"data": []}
+            result = {"data": []}
 
         # Handle chunked extraction (e.g., for heartrate)
         if chunk_size:
-            return self._extract_chunked_data(data_type, start_date, end_date, chunk_size)
+            logger.info(f"Extracting {data_type} in chunks from {start_date} to {end_date} with chunk size {chunk_size}")
+            result = self._extract_chunked_data(data_type, start_date, end_date, chunk_size)
 
         try:
             if (config.category == DataCategory.SPECIAL and 
@@ -101,13 +108,15 @@ class OuraExtractor:
                 # Handle datetime-based endpoints
                 start_datetime = datetime.combine(start_date, datetime.min.time())
                 end_datetime = datetime.combine(end_date, datetime.max.time())
-                return self._make_datetime_request(
+                logger.info(f"Making datetime request for {data_type} from {start_datetime} to {end_datetime}")
+                result = self._make_datetime_request(
                     self.config.endpoints[data_type],
                     start_datetime,
                     end_datetime
                 )
             elif config.category in [DataCategory.DAILY, DataCategory.DETAILED]:
-                return self._make_request(
+                logger.info(f"Making date-based request for {data_type} from {start_date} to {end_date}")
+                result = self._make_request(
                     self.config.endpoints[data_type],
                     start_date,
                     end_date
@@ -117,7 +126,9 @@ class OuraExtractor:
         except Exception as e:
             logger.warning(f"Error extracting {data_type} data: {e}")
             # FIXME: Add logic for daily_spo2 (id_day, details in constraints.py)
-            return {"data": []}
+            result = {"data": []}
+        
+        return result
 
     def _extract_chunked_data(self, data_type: str, start_date: date, 
                             end_date: date, chunk_size: timedelta) -> Dict[str, Any]:
